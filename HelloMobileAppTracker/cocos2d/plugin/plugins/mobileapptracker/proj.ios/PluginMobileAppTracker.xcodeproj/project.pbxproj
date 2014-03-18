@@ -1,0 +1,309 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		F838159F1857A63600E5E257 /* libPluginProtocol.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F838159E1857A63600E5E257 /* libPluginProtocol.a */; };
+		F8545188183ED607002EE2CF /* AdSupport.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F8545184183ED607002EE2CF /* AdSupport.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		F8545189183ED607002EE2CF /* CoreTelephony.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F8545185183ED607002EE2CF /* CoreTelephony.framework */; };
+		F854518A183ED607002EE2CF /* MobileCoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F8545186183ED607002EE2CF /* MobileCoreServices.framework */; };
+		F854518B183ED607002EE2CF /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F8545187183ED607002EE2CF /* SystemConfiguration.framework */; };
+		F86D33AE183D8E91008E5BF8 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F86D33AD183D8E91008E5BF8 /* Foundation.framework */; };
+		F86D33B3183D8E91008E5BF8 /* PluginMobileAppTracker.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = F86D33B2183D8E91008E5BF8 /* PluginMobileAppTracker.h */; };
+		F86D33B5183D8E91008E5BF8 /* PluginMobileAppTracker.m in Sources */ = {isa = PBXBuildFile; fileRef = F86D33B4183D8E91008E5BF8 /* PluginMobileAppTracker.m */; };
+		F8B4895E18B6C09D000E2FED /* MobileAppTracker.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F8B4895D18B6C09D000E2FED /* MobileAppTracker.a */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		F86D33A8183D8E91008E5BF8 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "include/$(PRODUCT_NAME)";
+			dstSubfolderSpec = 16;
+			files = (
+				F86D33B3183D8E91008E5BF8 /* PluginMobileAppTracker.h in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		F838159E1857A63600E5E257 /* libPluginProtocol.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libPluginProtocol.a; sourceTree = "<group>"; };
+		F83815A01857A76200E5E257 /* InterfaceAnalytics.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = InterfaceAnalytics.h; sourceTree = "<group>"; };
+		F8545184183ED607002EE2CF /* AdSupport.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AdSupport.framework; path = System/Library/Frameworks/AdSupport.framework; sourceTree = SDKROOT; };
+		F8545185183ED607002EE2CF /* CoreTelephony.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreTelephony.framework; path = System/Library/Frameworks/CoreTelephony.framework; sourceTree = SDKROOT; };
+		F8545186183ED607002EE2CF /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = System/Library/Frameworks/MobileCoreServices.framework; sourceTree = SDKROOT; };
+		F8545187183ED607002EE2CF /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
+		F86D33AA183D8E91008E5BF8 /* libPluginMobileAppTracker.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPluginMobileAppTracker.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		F86D33AD183D8E91008E5BF8 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		F86D33B1183D8E91008E5BF8 /* PluginMobileAppTracker-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "PluginMobileAppTracker-Prefix.pch"; sourceTree = "<group>"; };
+		F86D33B2183D8E91008E5BF8 /* PluginMobileAppTracker.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PluginMobileAppTracker.h; sourceTree = "<group>"; };
+		F86D33B4183D8E91008E5BF8 /* PluginMobileAppTracker.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PluginMobileAppTracker.m; sourceTree = "<group>"; };
+		F86D33D4183D8F4A008E5BF8 /* MobileAppTracker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MobileAppTracker.h; sourceTree = "<group>"; };
+		F8B4895D18B6C09D000E2FED /* MobileAppTracker.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = MobileAppTracker.a; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		F86D33A7183D8E91008E5BF8 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F838159F1857A63600E5E257 /* libPluginProtocol.a in Frameworks */,
+				F8545188183ED607002EE2CF /* AdSupport.framework in Frameworks */,
+				F8B4895E18B6C09D000E2FED /* MobileAppTracker.a in Frameworks */,
+				F8545189183ED607002EE2CF /* CoreTelephony.framework in Frameworks */,
+				F854518A183ED607002EE2CF /* MobileCoreServices.framework in Frameworks */,
+				F854518B183ED607002EE2CF /* SystemConfiguration.framework in Frameworks */,
+				F86D33AE183D8E91008E5BF8 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		F86D33A1183D8E91008E5BF8 = {
+			isa = PBXGroup;
+			children = (
+				F83815A01857A76200E5E257 /* InterfaceAnalytics.h */,
+				F86D33D4183D8F4A008E5BF8 /* MobileAppTracker.h */,
+				F86D33B2183D8E91008E5BF8 /* PluginMobileAppTracker.h */,
+				F86D33B4183D8E91008E5BF8 /* PluginMobileAppTracker.m */,
+				F86D33B1183D8E91008E5BF8 /* PluginMobileAppTracker-Prefix.pch */,
+				F86D33AC183D8E91008E5BF8 /* Frameworks */,
+				F86D33AB183D8E91008E5BF8 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F86D33AB183D8E91008E5BF8 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F86D33AA183D8E91008E5BF8 /* libPluginMobileAppTracker.a */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		F86D33AC183D8E91008E5BF8 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				F8B4895D18B6C09D000E2FED /* MobileAppTracker.a */,
+				F838159E1857A63600E5E257 /* libPluginProtocol.a */,
+				F8545184183ED607002EE2CF /* AdSupport.framework */,
+				F8545185183ED607002EE2CF /* CoreTelephony.framework */,
+				F8545186183ED607002EE2CF /* MobileCoreServices.framework */,
+				F8545187183ED607002EE2CF /* SystemConfiguration.framework */,
+				F86D33AD183D8E91008E5BF8 /* Foundation.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		F86D33A9183D8E91008E5BF8 /* PluginMobileAppTracker */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F86D33CD183D8E91008E5BF8 /* Build configuration list for PBXNativeTarget "PluginMobileAppTracker" */;
+			buildPhases = (
+				F86D33A6183D8E91008E5BF8 /* Sources */,
+				F86D33A7183D8E91008E5BF8 /* Frameworks */,
+				F86D33A8183D8E91008E5BF8 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PluginMobileAppTracker;
+			productName = PluginMobileAppTracker;
+			productReference = F86D33AA183D8E91008E5BF8 /* libPluginMobileAppTracker.a */;
+			productType = "com.apple.product-type.library.static";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F86D33A2183D8E91008E5BF8 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0500;
+				ORGANIZATIONNAME = "HasOffers Inc";
+			};
+			buildConfigurationList = F86D33A5183D8E91008E5BF8 /* Build configuration list for PBXProject "PluginMobileAppTracker" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = F86D33A1183D8E91008E5BF8;
+			productRefGroup = F86D33AB183D8E91008E5BF8 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F86D33A9183D8E91008E5BF8 /* PluginMobileAppTracker */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F86D33A6183D8E91008E5BF8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F86D33B5183D8E91008E5BF8 /* PluginMobileAppTracker.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		F86D33CB183D8E91008E5BF8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_INCLUDING_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/../../../protocols/platform/ios",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../platform/ios\"",
+					"\"$(SRCROOT)\"",
+				);
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+			};
+			name = Debug;
+		};
+		F86D33CC183D8E91008E5BF8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_INCLUDING_64_BIT)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(SRCROOT)/../../../protocols/platform/ios",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../platform/ios\"",
+					"\"$(SRCROOT)\"",
+				);
+				SDKROOT = iphoneos;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		F86D33CE183D8E91008E5BF8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DSTROOT = /tmp/PluginMobileAppTracker.dst;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "PluginMobileAppTracker-Prefix.pch";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"/Users/harshal/projects/sdk/sdk-cocos2dx/mobileapptracker/proj.ios",
+				);
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				VALID_ARCHS = "arm64 armv7 armv7s i386 x86_64";
+			};
+			name = Debug;
+		};
+		F86D33CF183D8E91008E5BF8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DSTROOT = /tmp/PluginMobileAppTracker.dst;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "PluginMobileAppTracker-Prefix.pch";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"/Users/harshal/projects/sdk/sdk-cocos2dx/mobileapptracker/proj.ios",
+				);
+				OTHER_LDFLAGS = "-ObjC";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				VALID_ARCHS = "arm64 armv7 armv7s i386 x86_64";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F86D33A5183D8E91008E5BF8 /* Build configuration list for PBXProject "PluginMobileAppTracker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F86D33CB183D8E91008E5BF8 /* Debug */,
+				F86D33CC183D8E91008E5BF8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F86D33CD183D8E91008E5BF8 /* Build configuration list for PBXNativeTarget "PluginMobileAppTracker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F86D33CE183D8E91008E5BF8 /* Debug */,
+				F86D33CF183D8E91008E5BF8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F86D33A2183D8E91008E5BF8 /* Project object */;
+}

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>0B49DE92-27EA-413A-85EC-10F8B544825A</string>
+	<key>IDESourceControlProjectName</key>
+	<string>HelloMobileAppTracker</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>D7B58DFA-6121-46C3-8A79-651F15BDFC40</key>
+		<string>ssh://github.com/hasjohnb/sdk.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>sdk-cocos2dx/HelloMobileAppTracker/proj.ios/HelloMobileAppTracker.xcodeproj/project.xcworkspace</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>D7B58DFA-6121-46C3-8A79-651F15BDFC40</key>
+		<string>../../../../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>ssh://github.com/hasjohnb/sdk.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>110</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>D7B58DFA-6121-46C3-8A79-651F15BDFC40</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>D7B58DFA-6121-46C3-8A79-651F15BDFC40</string>
+			<key>IDESourceControlWCCName</key>
+			<string>sdk</string>
+		</dict>
+	</array>
+</dict>
+</plist>
