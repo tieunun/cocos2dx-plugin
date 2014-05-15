@@ -65,6 +65,15 @@
 - (void)setEventAttribute4:(NSString *)attr;
 - (void)setEventAttribute5:(NSString *)attr;
 
+- (void)setEventContentId:(NSString *)contentId;
+- (void)setEventContentType:(NSString *)contentType;
+- (void)setEventDate1:(NSString *)dateMillis;
+- (void)setEventDate2:(NSString *)dateMillis;
+- (void)setEventLevel:(NSNumber *)level;
+- (void)setEventQuantity:(NSNumber *)quantity;
+- (void)setEventRating:(NSNumber *)rating;
+- (void)setEventSearchString:(NSString *)searchString;
+
 // Android-only method, no-op in iOS
 - (void)setGoogleAdvertisingId:(NSString *)gid;
 
@@ -72,6 +81,7 @@
 
 - (NSString*)getMatId;
 - (NSString*)getOpenLogId;
+- (NSString*)getIsPayingUser;
 
 #pragma mark - InterfaceAnalytics methods
 

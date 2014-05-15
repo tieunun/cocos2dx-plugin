@@ -5,34 +5,34 @@
 	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
 	<false/>
 	<key>IDESourceControlProjectIdentifier</key>
-	<string>01185142-E605-4E2A-94DE-816AD5DA8F2C</string>
+	<string>8BD64441-889A-4C0E-867F-C8B90415DC01</string>
 	<key>IDESourceControlProjectName</key>
 	<string>PluginMobileAppTracker</string>
 	<key>IDESourceControlProjectOriginsDictionary</key>
 	<dict>
-		<key>D7B58DFA-6121-46C3-8A79-651F15BDFC40</key>
-		<string>ssh://github.com/hasjohnb/sdk.git</string>
+		<key>7CE918E2-DBDC-4787-9DE2-4304A058F664</key>
+		<string>ssh://github.com/harshal-hasoffers/sdk.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
 	<string>sdk-cocos2dx/mobileapptracker/proj.ios/PluginMobileAppTracker.xcodeproj/project.xcworkspace</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
-		<key>D7B58DFA-6121-46C3-8A79-651F15BDFC40</key>
+		<key>7CE918E2-DBDC-4787-9DE2-4304A058F664</key>
 		<string>../../../../..</string>
 	</dict>
 	<key>IDESourceControlProjectURL</key>
-	<string>ssh://github.com/hasjohnb/sdk.git</string>
+	<string>ssh://github.com/harshal-hasoffers/sdk.git</string>
 	<key>IDESourceControlProjectVersion</key>
 	<integer>110</integer>
 	<key>IDESourceControlProjectWCCIdentifier</key>
-	<string>D7B58DFA-6121-46C3-8A79-651F15BDFC40</string>
+	<string>7CE918E2-DBDC-4787-9DE2-4304A058F664</string>
 	<key>IDESourceControlProjectWCConfigurations</key>
 	<array>
 		<dict>
 			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
 			<string>public.vcs.git</string>
 			<key>IDESourceControlWCCIdentifierKey</key>
-			<string>D7B58DFA-6121-46C3-8A79-651F15BDFC40</string>
+			<string>7CE918E2-DBDC-4787-9DE2-4304A058F664</string>
 			<key>IDESourceControlWCCName</key>
 			<string>sdk</string>
 		</dict>

@@ -2,6 +2,10 @@
 #define __HELLOWORLD_SCENE_H__
 
 #include "cocos2d.h"
+#include "PluginManager.h"
+#include "ProtocolAnalytics.h"
+
+using namespace cocos2d;
 
 class HelloWorld : public cocos2d::Layer
 {
@@ -18,9 +22,15 @@ public:
     void menuCloseCallback(Object* pSender);
     void menuCallback(Object* pSender);
     void reloadPluginMenuCallback(Object* pSender);
+
+    void loadMobileAppTrackerPlugin();
+    void unloadMobileAppTrackerPlugin();
     
     // implement the "static create()" method manually
     CREATE_FUNC(HelloWorld);
+
+private:
+    cocos2d::plugin::ProtocolAnalytics* _pluginMAT;
 };
 
 #endif // __HELLOWORLD_SCENE_H__

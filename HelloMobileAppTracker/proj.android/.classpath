@@ -2,25 +2,39 @@
 <classpath>
 	
 	
+	
+	
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
 	
 	
-	<classpathentry kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
+	
+	
+	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
+	
+	
+	<classpathentry exported="true" kind="lib" path="plugin-x/protocols/android/libPluginProtocol.jar"/>
+	
+	
 	
 	
 	<classpathentry kind="src" path="src"/>
 	
 	
+	
+	
 	<classpathentry kind="src" path="gen"/>
+	
+	
 	
 	
 	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.DEPENDENCIES"/>
 	
 	
+	
 	<classpathentry kind="output" path="bin/classes"/>
 	
+	
 
-	<classpathentry exported="true" kind="lib" path="plugin-x/protocols/android/libPluginProtocol.jar"/>
 	<classpathentry exported="true" kind="lib" path="plugin-x/plugins/mobileapptracker/android/libPluginMobileAppTracker.jar"/>
-	<classpathentry exported="true" kind="lib" path="plugin-x/plugins/mobileapptracker/android/MobileAppTracker-3.1.jar"/>
+	<classpathentry exported="true" kind="lib" path="plugin-x/plugins/mobileapptracker/android/MobileAppTracker-3.2.jar"/>
 </classpath>

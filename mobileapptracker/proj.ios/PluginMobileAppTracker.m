@@ -45,6 +45,11 @@
     NSLog(@"MATPlugin failed: %@", strError);
 }
 
+- (void)mobileAppTrackerEnqueuedActionWithReferenceId:(NSString *)referenceId
+{
+    NSLog(@"MATPlugin action enqueued: %@", referenceId);
+}
+
 @end
 
 @implementation PluginMobileAppTracker
@@ -68,7 +73,6 @@ MATSDKDelegate *matDelegate = nil;
 {
     [MobileAppTracker measureSession];
 }
-
 
 - (void)measureAction:(NSString *)eventName
 {
@@ -279,6 +283,13 @@ MATSDKDelegate *matDelegate = nil;
     [MobileAppTracker setPackageName:packageName];
 }
 
+- (void)setPayingUser:(NSNumber *)yesorno
+{
+    BOOL isPaying = [yesorno boolValue];
+    
+    [MobileAppTracker setPayingUser:isPaying];
+}
+
 - (void)setFacebookUserId:(NSString *)userId
 {
     [MobileAppTracker setFacebookUserId:userId];
@@ -352,6 +363,60 @@ MATSDKDelegate *matDelegate = nil;
     [MobileAppTracker setEventAttribute5:attr];
 }
 
+- (void)setEventContentId:(NSString *)contentId
+{
+    [MobileAppTracker setEventContentId:contentId];
+}
+
+- (void)setEventContentType:(NSString *)contentType
+{
+    [MobileAppTracker setEventContentType:contentType];
+}
+
+- (void)setEventDate1:(NSString *)dateMillis
+{
+    double millis = [dateMillis doubleValue];
+    
+    NSDate *date = [NSDate dateWithTimeIntervalSince1970:millis / 1000];
+    
+    [MobileAppTracker setEventDate1:date];
+}
+
+- (void)setEventDate2:(NSString *)dateMillis
+{
+    double millis = [dateMillis doubleValue];
+    
+    NSDate *date = [NSDate dateWithTimeIntervalSince1970:millis / 1000];
+    
+    [MobileAppTracker setEventDate2:date];
+}
+
+- (void)setEventLevel:(NSNumber *)level
+{
+    NSInteger intLevel = [level integerValue];
+    
+    [MobileAppTracker setEventLevel:intLevel];
+}
+
+- (void)setEventQuantity:(NSNumber *)quantity
+{
+    NSInteger intQuantity = [quantity integerValue];
+    
+    [MobileAppTracker setEventQuantity:intQuantity];
+}
+
+- (void)setEventRating:(NSNumber *)rating
+{
+    NSInteger intRating = [rating integerValue];
+    
+    [MobileAppTracker setEventRating:intRating];
+}
+
+- (void)setEventSearchString:(NSString *)searchString
+{
+    [MobileAppTracker setEventSearchString:searchString];
+}
+
 - (void)setExistingUser:(NSNumber *)yesorno
 {
     BOOL isExisting = [yesorno boolValue];
@@ -408,6 +473,11 @@ MATSDKDelegate *matDelegate = nil;
 - (NSString*)getOpenLogId
 {
     return [MobileAppTracker openLogId];
+}
+
+- (NSString*)getIsPayingUser
+{
+    return [NSString stringWithFormat:@"%d", [MobileAppTracker isPayingUser]];
 }
 
 #pragma mark - Helper Methods
@@ -476,19 +546,19 @@ MATSDKDelegate *matDelegate = nil;
 
 - (NSString*)getSDKVersion
 {
-    return @"3.0.6";
+    return @"3.1.3";
 }
 
 - (NSString*)getPluginVersion
 {
-    return @"3.0.6";
+    return @"3.1.3";
 }
 
 #pragma mark - InterfaceAnalytics methods - Ignored Methods
 
 - (void)startSession:(NSString*)appKey
 {
-    // no-op
+    [MobileAppTracker measureSession];
 }
 
 - (void)stopSession
@@ -513,7 +583,7 @@ MATSDKDelegate *matDelegate = nil;
 
 - (void)logEvent: (NSString*) eventId
 {
-    // no-op
+    [MobileAppTracker measureAction:eventId];
 }
 
 - (void)logEvent: (NSString*) eventId withParam:(NSMutableDictionary*) paramMap

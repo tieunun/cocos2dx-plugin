@@ -1,6 +1,7 @@
 package org.cocos2dx.plugin;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Hashtable;
 import java.util.List;
 
@@ -150,7 +151,7 @@ public class PluginMobileAppTracker implements InterfaceAnalytics {
             String publisherId = eventInfo.getString("Param4");
             boolean shouldRedirect = eventInfo.getBoolean("Param5");
             
-            mat.setTracking(advertiserId, targetAppId, publisherId, offerId, shouldRedirect);
+            mat.startAppToAppTracking(advertiserId, targetAppId, publisherId, offerId, shouldRedirect);
         } catch(Exception e) {
             LogE("Exception: ", e);
         }
@@ -192,6 +193,42 @@ public class PluginMobileAppTracker implements InterfaceAnalytics {
         mat.setEventAttribute5(attribute);
     }
     
+    public void setEventContentId(String contentId) {
+        mat.setEventContentId(contentId);
+    }
+    
+    public void setEventContentType(String contentType) {
+        mat.setEventContentType(contentType);
+    }
+    
+    public void setEventDate1(String dateMillis) {
+    	long millis = Long.parseLong(dateMillis);
+    	Date date = new Date(millis);
+        mat.setEventDate1(date);
+    }
+    
+    public void setEventDate2(String dateMillis) {
+    	long millis = Long.parseLong(dateMillis);
+    	Date date = new Date(millis);
+        mat.setEventDate2(date);
+    }
+    
+    public void setEventLevel(int level) {
+        mat.setEventLevel(level);
+    }
+    
+    public void setEventQuantity(int quantity) {
+        mat.setEventQuantity(quantity);
+    }
+    
+    public void setEventRating(float rating) {
+        mat.setEventRating(rating);
+    }
+    
+    public void setEventSearchString(String searchString) {
+        mat.setEventSearchString(searchString);
+    }
+    
     public void setExistingUser(boolean existingUser) {
         mat.setExistingUser(existingUser);
     }
@@ -220,6 +257,10 @@ public class PluginMobileAppTracker implements InterfaceAnalytics {
     
     public void setPackageName(String packageName) {
         mat.setPackageName(packageName);
+    }
+    
+    public void setPayingUser(boolean isPaying) {
+        mat.setIsPayingUser(isPaying);
     }
     
     public void setSiteId(String siteId) {
@@ -254,7 +295,7 @@ public class PluginMobileAppTracker implements InterfaceAnalytics {
         // not available in android
     }
     
-    public void setAppleAdvertisingIdentifier(String appleAdvertisingId) {
+    public void setAppleAdvertisingIdentifier(String appleAdvertisingId, boolean isTrackingEnabled) {
         // not available in android
     }
     
@@ -330,7 +371,11 @@ public class PluginMobileAppTracker implements InterfaceAnalytics {
     public String getOpenLogId() {
         return mat.getOpenLogId();
     }
-
+    
+    public String getIsPayingUser() {
+        return new String("" + mat.getIsPayingUser());
+    }
+    
     @Override
     public void startSession(String appKey) {
         // TODO Auto-generated method stub

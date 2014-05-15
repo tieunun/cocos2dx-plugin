@@ -56,5 +56,6 @@
 			<type>2</type>
 			<locationURI>COCOS2DX/scripting</locationURI>
 		</link>
-	<link><name>plugin-x</name><type>2</type><locationURI>/home/john-gu/tools/cocos2d-x-3.0beta/plugin/publish</locationURI></link><link><name>plugin-x</name><type>2</type><locationURI>/home/johng/tools/cocos2d-x-3.0beta2/plugin/publish</locationURI></link></linkedResources>
+		<link><name>plugin-x</name><type>2</type><locationURI>../cocos2d/plugin/publish</locationURI></link>
+	</linkedResources>
 </projectDescription>

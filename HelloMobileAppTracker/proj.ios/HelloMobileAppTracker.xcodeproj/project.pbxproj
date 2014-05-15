@@ -28,8 +28,10 @@
 		F891902418B81AED00903209 /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F891902318B81AED00903209 /* CoreMotion.framework */; };
 		F891902618B81EA100903209 /* libcocos2dx iOS.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F891902518B81EA100903209 /* libcocos2dx iOS.a */; };
 		F891902818B81EC900903209 /* libPluginMobileAppTracker.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F891902718B81EC900903209 /* libPluginMobileAppTracker.a */; };
+		F89656F118F75F300077DFFC /* AdSupport.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F89656F018F75F300077DFFC /* AdSupport.framework */; };
 		F8C8F6CC1840221E00730BB5 /* CoreTelephony.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F8C8F6C91840221E00730BB5 /* CoreTelephony.framework */; };
 		F8C8F6CD1840221E00730BB5 /* MobileCoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F8C8F6CA1840221E00730BB5 /* MobileCoreServices.framework */; };
+		F8DAEB601900957600E0322F /* IFAWrapper.mm in Sources */ = {isa = PBXBuildFile; fileRef = F8DAEB5F1900957600E0322F /* IFAWrapper.mm */; };
 		FA0CB877168D2F5400E36B11 /* AppDelegate.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FA0CB873168D2F5400E36B11 /* AppDelegate.cpp */; };
 		FA0CB878168D2F5400E36B11 /* HelloWorldScene.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FA0CB875168D2F5400E36B11 /* HelloWorldScene.cpp */; };
 		FA0CB87E168D2FB200E36B11 /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA0CB87D168D2FB200E36B11 /* SystemConfiguration.framework */; };
@@ -65,8 +67,11 @@
 		F891902318B81AED00903209 /* CoreMotion.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMotion.framework; path = System/Library/Frameworks/CoreMotion.framework; sourceTree = SDKROOT; };
 		F891902518B81EA100903209 /* libcocos2dx iOS.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libcocos2dx iOS.a"; sourceTree = "<group>"; };
 		F891902718B81EC900903209 /* libPluginMobileAppTracker.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libPluginMobileAppTracker.a; sourceTree = "<group>"; };
+		F89656F018F75F300077DFFC /* AdSupport.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AdSupport.framework; path = System/Library/Frameworks/AdSupport.framework; sourceTree = SDKROOT; };
 		F8C8F6C91840221E00730BB5 /* CoreTelephony.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreTelephony.framework; path = System/Library/Frameworks/CoreTelephony.framework; sourceTree = SDKROOT; };
 		F8C8F6CA1840221E00730BB5 /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = System/Library/Frameworks/MobileCoreServices.framework; sourceTree = SDKROOT; };
+		F8DAEB5E1900957600E0322F /* IFAWrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IFAWrapper.h; sourceTree = "<group>"; };
+		F8DAEB5F1900957600E0322F /* IFAWrapper.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IFAWrapper.mm; sourceTree = "<group>"; };
 		FA0CB873168D2F5400E36B11 /* AppDelegate.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = AppDelegate.cpp; sourceTree = "<group>"; };
 		FA0CB874168D2F5400E36B11 /* AppDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		FA0CB875168D2F5400E36B11 /* HelloWorldScene.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = HelloWorldScene.cpp; sourceTree = "<group>"; };
@@ -81,6 +86,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F89656F118F75F300077DFFC /* AdSupport.framework in Frameworks */,
 				F891902418B81AED00903209 /* CoreMotion.framework in Frameworks */,
 				F891902618B81EA100903209 /* libcocos2dx iOS.a in Frameworks */,
 				F891901A18B80F8300903209 /* iAd.framework in Frameworks */,
@@ -124,6 +130,7 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				F89656F018F75F300077DFFC /* AdSupport.framework */,
 				781C33B31547F06B00633F88 /* AudioToolbox.framework */,
 				781C33B51547F06B00633F88 /* AVFoundation.framework */,
 				288765A40DF7441C002DB57D /* CoreGraphics.framework */,
@@ -165,6 +172,8 @@
 		BF5681CC1313A84D0055EEAC /* ios */ = {
 			isa = PBXGroup;
 			children = (
+				F8DAEB5E1900957600E0322F /* IFAWrapper.h */,
+				F8DAEB5F1900957600E0322F /* IFAWrapper.mm */,
 				D4ABB4B213B4395300552E6E /* main.m */,
 				BF365AA612A103F70050DCF4 /* AppController.h */,
 				BF365AA712A103F70050DCF4 /* AppController.mm */,
@@ -212,7 +221,12 @@
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0500;
+				LastUpgradeCheck = 0510;
+				TargetAttributes = {
+					1D6058900D05DD3D006BFB54 = {
+						DevelopmentTeam = MN489GLUZK;
+					};
+				};
 			};
 			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "HelloMobileAppTracker" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -257,6 +271,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F8DAEB601900957600E0322F /* IFAWrapper.mm in Sources */,
 				BF365AA812A103F70050DCF4 /* AppController.mm in Sources */,
 				BF4DE6AD138BB89600CF907D /* RootViewController.mm in Sources */,
 				D4ABB4B313B4395300552E6E /* main.m in Sources */,
@@ -272,9 +287,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
@@ -304,7 +321,7 @@
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "\"$(SRCROOT)/../cocos2d/cocos/math/kazmath/include\" \"$(SRCROOT)/../cocos2d/cocos/base\" \"$(SRCROOT)/../cocos2d\" \"$(SRCROOT)/../cocos2d/cocos/2d\" \"$(SRCROOT)/../cocos2d/cocos/2d/platform/ios\" \"$(SRCROOT)/../cocos2d/cocos/physics\" \"$(SRCROOT)/../cocos2d/plugin/protocols/include\"";
-				VALID_ARCHS = "armv7 armv7s arm64 i386 x86_64";
+				VALID_ARCHS = "armv7 armv7s arm64";
 			};
 			name = Debug;
 		};
@@ -312,9 +329,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				CLANG_CXX_LANGUAGE_STANDARD = "c++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = YES;
 				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -341,7 +360,7 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "\"$(SRCROOT)/../cocos2d/cocos/math/kazmath/include\" \"$(SRCROOT)/../cocos2d/cocos/base\" \"$(SRCROOT)/../cocos2d\" \"$(SRCROOT)/../cocos2d/cocos/2d\" \"$(SRCROOT)/../cocos2d/cocos/2d/platform/ios\" \"$(SRCROOT)/../cocos2d/cocos/physics\" \"$(SRCROOT)/../cocos2d/plugin/protocols/include\"";
 				VALIDATE_PRODUCT = YES;
-				VALID_ARCHS = "armv7 armv7s arm64 i386 x86_64";
+				VALID_ARCHS = "armv7 armv7s arm64";
 			};
 			name = Release;
 		};
