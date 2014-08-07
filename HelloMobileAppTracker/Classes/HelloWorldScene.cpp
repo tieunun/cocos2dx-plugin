@@ -1,7 +1,6 @@
 #include "HelloWorldScene.h"
 #include "PluginManager.h"
 #include "ProtocolAnalytics.h"
-#include "AppDelegate.h"
 
 #include <sys/time.h>
 

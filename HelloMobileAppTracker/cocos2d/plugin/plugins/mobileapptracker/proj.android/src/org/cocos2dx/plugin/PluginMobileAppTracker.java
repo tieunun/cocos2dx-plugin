@@ -173,6 +173,21 @@ public class PluginMobileAppTracker implements InterfaceAnalytics {
         mat.setDebugMode(shouldDebug);
     }
     
+    public void setFacebookUserId(String userId)
+    {
+        mat.setFacebookUserId(userId);
+    }
+    
+    public void setGoogleUserId(String userId)
+    {
+        mat.setGoogleUserId(userId);
+    }
+    
+    public void setTwitterUserId(String userId)
+    {
+        mat.setTwitterUserId(userId);
+    }
+    
     public void setEventAttribute1(String attribute) {
         mat.setEventAttribute1(attribute);
     }

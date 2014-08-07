@@ -141,24 +141,12 @@ public class PluginMobileAppTracker implements InterfaceAnalytics {
         }
     }
     
-    public void startAppToAppTracking(JSONObject eventInfo) {
-        try {
-            // String targetAppId, String advertiserId, String offerId, String publisherId, boolean shouldRedirect
-            
-            String targetAppId = eventInfo.getString("Param1");
-            String advertiserId = eventInfo.getString("Param2");
-            String offerId = eventInfo.getString("Param3");
-            String publisherId = eventInfo.getString("Param4");
-            boolean shouldRedirect = eventInfo.getBoolean("Param5");
-            
-            mat.startAppToAppTracking(advertiserId, targetAppId, publisherId, offerId, shouldRedirect);
-        } catch(Exception e) {
-            LogE("Exception: ", e);
-        }
-    }
-    
     public void setAge(int age) {
         mat.setAge(age);
+    }
+    
+    public void setAndroidId(String androidId) {
+        mat.setAndroidId(androidId);
     }
     
     public void setAllowDuplicates(boolean allowDuplicates) {
