@@ -22,7 +22,6 @@ GUI/CCControlExtension/CCScale9Sprite.cpp \
 GUI/CCEditBox/CCEditBox.cpp \
 GUI/CCEditBox/CCEditBoxImplAndroid.cpp \
 GUI/CCEditBox/CCEditBoxImplNone.cpp \
-GUI/CCEditBox/CCEditBoxImplTizen.cpp \
 GUI/CCEditBox/CCEditBoxImplWin.cpp \
 GUI/CCScrollView/CCScrollView.cpp \
 GUI/CCScrollView/CCTableView.cpp \
@@ -46,7 +45,7 @@ LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/.. \
                     
 include $(BUILD_STATIC_LIBRARY)
 
-$(call import-module,2d)
+$(call import-module,.)
 $(call import-module,audio/android)
 $(call import-module,curl/prebuilt/android)
 $(call import-module,Box2D)

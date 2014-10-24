@@ -28,9 +28,9 @@ THE SOFTWARE.
 #ifndef __CCATLAS_NODE_H__
 #define __CCATLAS_NODE_H__
 
-#include "CCNode.h"
-#include "CCProtocols.h"
-#include "ccTypes.h"
+#include "2d/CCNode.h"
+#include "base/CCProtocols.h"
+#include "base/ccTypes.h"
 #include "renderer/CCQuadCommand.h"
 
 NS_CC_BEGIN
@@ -69,7 +69,7 @@ public:
 
     
     // Overrides
-    virtual void draw() override;
+    virtual void draw(Renderer *renderer, const Mat4 &transform, uint32_t flags) override;
     virtual Texture2D* getTexture() const override;
     virtual void setTexture(Texture2D *texture) override;
     virtual bool isOpacityModifyRGB() const override;
@@ -91,17 +91,17 @@ public:
     */
     virtual const BlendFunc& getBlendFunc() const override;
 
-
-protected:
+CC_CONSTRUCTOR_ACCESS:
     AtlasNode();
     virtual ~AtlasNode();
 
     /** initializes an AtlasNode  with an Atlas file the width and height of each item and the quantity of items to render*/
     bool initWithTileFile(const std::string& tile, int tileWidth, int tileHeight, int itemsToRender);
-
+    
     /** initializes an AtlasNode  with a texture the width and height of each item measured in points and the quantity of items to render*/
     bool initWithTexture(Texture2D* texture, int tileWidth, int tileHeight, int itemsToRender);
 
+protected:
     void calculateMaxItems();
     void updateBlendFunc();
     void updateOpacityModifyRGB();

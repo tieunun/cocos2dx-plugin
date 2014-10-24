@@ -1,13 +1,13 @@
 #ifndef __CCB_SEQUENCE_PROPERTY_H__
 #define __CCB_SEQUENCE_PROPERTY_H__
 
-#include "CCObject.h"
-#include "CCVector.h"
+#include "base/CCRef.h"
+#include "base/CCVector.h"
 #include "CCBKeyframe.h"
 
 namespace cocosbuilder {
 
-class CCBSequenceProperty : public cocos2d::Object
+class CCBSequenceProperty : public cocos2d::Ref
 {
 public:
     /**

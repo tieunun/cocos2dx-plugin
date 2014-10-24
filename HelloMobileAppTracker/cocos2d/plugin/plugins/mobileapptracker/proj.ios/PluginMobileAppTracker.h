@@ -19,11 +19,17 @@
 #pragma mark - MAT event measurement methods
 
 - (void)measureSession;
-- (void)measureAction:(NSMutableDictionary *)params;
+- (void)measureAction:(NSString *)params;
 - (void)measureActionWithRefId:(NSMutableDictionary *)params;
 - (void)measureActionWithRevenue:(NSMutableDictionary *)params;
 - (void)measureActionWithEventItems:(NSMutableDictionary *)params;
 - (void)measureActionWithIAPReceipt:(NSMutableDictionary *)params;
+
+- (void)measureActionId:(NSString *)params;
+- (void)measureActionIdWithRefId:(NSMutableDictionary *)params;
+- (void)measureActionIdWithRevenue:(NSMutableDictionary *)params;
+- (void)measureActionIdWithEventItems:(NSMutableDictionary *)params;
+- (void)measureActionIdWithIAPReceipt:(NSMutableDictionary *)params;
 
 #pragma mark - MAT app-to-app tracking method
 

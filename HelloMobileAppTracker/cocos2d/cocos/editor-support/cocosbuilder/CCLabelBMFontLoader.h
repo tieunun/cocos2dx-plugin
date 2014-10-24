@@ -1,8 +1,8 @@
 #ifndef _CCB_CCLABELBMFONTLOADER_H_
 #define _CCB_CCLABELBMFONTLOADER_H_
 
-#include "CCObject.h"
-#include "CCLabelBMFont.h"
+#include "base/CCRef.h"
+#include "2d/CCLabel.h"
 
 #include "CCNodeLoader.h"
 
@@ -21,7 +21,7 @@ public:
     CCB_STATIC_NEW_AUTORELEASE_OBJECT_METHOD(LabelBMFontLoader, loader);
 
 protected:
-    CCB_VIRTUAL_NEW_AUTORELEASE_CREATECCNODE_METHOD(cocos2d::LabelBMFont);
+    CCB_VIRTUAL_NEW_AUTORELEASE_CREATECCNODE_METHOD(cocos2d::Label);
 
     virtual void onHandlePropTypeColor3(cocos2d::Node * pNode, cocos2d::Node * pParent, const char * pPropertyName, cocos2d::Color3B pColor3B, CCBReader * ccbReader);
     virtual void onHandlePropTypeByte(cocos2d::Node * pNode, cocos2d::Node * pParent, const char * pPropertyName, unsigned char pByte, CCBReader * ccbReader);

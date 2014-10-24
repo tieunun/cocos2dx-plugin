@@ -28,7 +28,7 @@
 
 #include <string>
 
-#include "CCLabel.h"
+#include "2d/CCLabel.h"
 
 NS_CC_BEGIN
 
@@ -36,21 +36,16 @@ NS_CC_BEGIN
 class FontAtlas;
 
 
-class CC_DLL Font : public Object
+class CC_DLL Font : public Ref
 {
 public:
     virtual  FontAtlas *createFontAtlas() = 0;
 
-    virtual int* getHorizontalKerningForTextUTF16(unsigned short *text, int &outNumLetters) const = 0;
+    virtual int* getHorizontalKerningForTextUTF16(const std::u16string& text, int &outNumLetters) const = 0;
     virtual const char* getCurrentGlyphCollection() const;
     
-    virtual unsigned char * getGlyphBitmap(unsigned short theChar, int &outWidth, int &outHeight) const { return 0; }
     
     virtual int getFontMaxHeight() const { return 0; }
-    
-    virtual int getUTF16TextLenght(unsigned short int *text) const;
-    virtual unsigned short * getUTF16Text(const char *text, int &outNumLetters) const;
-    virtual unsigned short * trimUTF16Text(unsigned short int *text, int newBegin, int newEnd) const;
     
 protected:
     

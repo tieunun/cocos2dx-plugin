@@ -1,2 +1,5 @@
 bin/
 gen/
+
+# OS X
+.DS_Store

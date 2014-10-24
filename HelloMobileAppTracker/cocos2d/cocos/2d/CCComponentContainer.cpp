@@ -23,9 +23,9 @@ THE SOFTWARE.
 ****************************************************************************/
 
 
-#include "CCComponentContainer.h"
-#include "CCComponent.h"
-#include "CCDirector.h"
+#include "2d/CCComponentContainer.h"
+#include "2d/CCComponent.h"
+#include "base/CCDirector.h"
 
 NS_CC_BEGIN
 
@@ -61,7 +61,6 @@ bool ComponentContainer::add(Component *com)
         if (_components == nullptr)
         {
             _components = new Map<std::string, Component*>();
-            _owner->scheduleUpdate();
         }
         Component *component = _components->at(com->getName());
         
@@ -122,10 +121,12 @@ void ComponentContainer::visit(float delta)
 {
     if (_components != nullptr)
     {
+        CC_SAFE_RETAIN(_owner);
         for (auto iter = _components->begin(); iter != _components->end(); ++iter)
         {
             iter->second->update(delta);
         }
+        CC_SAFE_RELEASE(_owner);
     }
 }
 

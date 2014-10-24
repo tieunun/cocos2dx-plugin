@@ -22,21 +22,28 @@
  THE SOFTWARE.
  ****************************************************************************/
 
-#include "CCConsole.h"
+#include "base/CCConsole.h"
 
 #include <thread>
 #include <algorithm>
-
+#include <functional>
+#include <cctype>
+#include <locale>
+#include <sstream>
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 #include <fcntl.h>
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
 #include <io.h>
 #include <WS2tcpip.h>
-
+#include <Winsock2.h>
 #define bzero(a, b) memset(a, 0, b);
-
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WP8)
+#include "inet_ntop_winrt.h"
+#include "CCWinRTUtils.h"
+#endif
 #else
 #include <netdb.h>
 #include <unistd.h>
@@ -44,18 +51,68 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/ioctl.h>
 #endif
 
-#include "CCDirector.h"
-#include "CCScheduler.h"
-#include "CCScene.h"
-#include "CCPlatformConfig.h"
+#include "base/CCDirector.h"
+#include "base/CCScheduler.h"
+#include "base/CCPlatformConfig.h"
+#include "base/CCConfiguration.h"
+#include "2d/CCScene.h"
 #include "platform/CCFileUtils.h"
-#include "CCConfiguration.h"
-#include "CCTextureCache.h"
-
+#include "renderer/CCTextureCache.h"
+#include "CCGLView.h"
+#include "base/base64.h"
+#include "base/ccUtils.h"
 NS_CC_BEGIN
 
+extern const char* cocos2dVersion(void);
+//TODO: these general utils should be in a seperate class
+//
+// Trimming functions were taken from: http://stackoverflow.com/a/217605
+//
+// trim from start
+static std::string &ltrim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
+    return s;
+}
+
+// trim from end
+static std::string &rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+    return s;
+}
+
+// trim from both ends
+static std::string &trim(std::string &s) {
+    return ltrim(rtrim(s));
+}
+
+static std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
+    std::stringstream ss(s);
+    std::string item;
+    while (std::getline(ss, item, delim)) {
+        elems.push_back(item);
+    }
+    return elems;
+}
+
+
+static std::vector<std::string> split(const std::string &s, char delim) {
+    std::vector<std::string> elems;
+    split(s, delim, elems);
+    return elems;
+}
+//isFloat taken from http://stackoverflow.com/questions/447206/c-isfloat-function
+static bool isFloat( std::string myString ) {
+    std::istringstream iss(myString);
+    float f;
+    iss >> std::noskipws >> f; // noskipws considers leading whitespace invalid
+    // Check the entire string was consumed and if either failbit or badbit is set
+    return iss.eof() && !iss.fail(); 
+}
+
+#if CC_TARGET_PLATFORM != CC_PLATFORM_WINRT
 
 // helper free functions
 
@@ -69,15 +126,20 @@ static ssize_t mydprintf(int sock, const char *format, ...)
 	va_start(args, format);
 	vsnprintf(buf, sizeof(buf), format, args);
 	va_end(args);
+	return send(sock, buf, strlen(buf),0);
+}
 
-	return write(sock, buf, strlen(buf));
+static void sendPrompt(int fd)
+{
+    const char prompt[] = "> ";
+    send(fd, prompt, sizeof(prompt),0);
 }
 
 static int printSceneGraph(int fd, Node* node, int level)
 {
     int total = 1;
     for(int i=0; i<level; ++i)
-        write(fd, "-", 1);
+        send(fd, "-", 1,0);
 
     mydprintf(fd, " %s\n", node->getDescription().c_str());
 
@@ -89,10 +151,11 @@ static int printSceneGraph(int fd, Node* node, int level)
 
 static void printSceneGraphBoot(int fd)
 {
-    write(fd,"\n",1);
+    send(fd,"\n",1,0);
     auto scene = Director::getInstance()->getRunningScene();
     int total = printSceneGraph(fd, scene, 0);
     mydprintf(fd, "Total Nodes: %d\n", total);
+    sendPrompt(fd);
 }
 
 static void printFileUtils(int fd)
@@ -119,7 +182,9 @@ static void printFileUtils(int fd)
     for( const auto &item : cache) {
         mydprintf(fd, "%s -> %s\n", item.first.c_str(), item.second.c_str());
     }
+    sendPrompt(fd);
 }
+#endif
 
 
 #if defined(__MINGW32__)
@@ -131,7 +196,7 @@ static const char* inet_ntop(int af, const void* src, char* dst, int cnt)
     memcpy(&(srcaddr.sin_addr), src, sizeof(srcaddr.sin_addr));
 
     srcaddr.sin_family = af;
-    if (WSAAddressToString((struct sockaddr*) &srcaddr, sizeof(struct sockaddr_in), 0, dst, (LPDWORD) &cnt) != 0)
+    if (WSAAddressToStringA((struct sockaddr*) &srcaddr, sizeof(struct sockaddr_in), 0, dst, (LPDWORD) &cnt) != 0)
     {
         return nullptr;
     }
@@ -154,22 +219,23 @@ static void _log(const char *format, va_list args)
 #if CC_TARGET_PLATFORM == CC_PLATFORM_ANDROID
     __android_log_print(ANDROID_LOG_DEBUG, "cocos2d-x debug info",  "%s", buf);
 
-#elif CC_TARGET_PLATFORM ==  CC_PLATFORM_WIN32
+#elif CC_TARGET_PLATFORM ==  CC_PLATFORM_WIN32 || CC_TARGET_PLATFORM == CC_PLATFORM_WINRT || CC_TARGET_PLATFORM == CC_PLATFORM_WP8
     WCHAR wszBuf[MAX_LOG_LENGTH] = {0};
     MultiByteToWideChar(CP_UTF8, 0, buf, -1, wszBuf, sizeof(wszBuf));
     OutputDebugStringW(wszBuf);
-    OutputDebugStringA("\n");
-
-    WideCharToMultiByte(CP_ACP, 0, wszBuf, sizeof(wszBuf), buf, sizeof(buf), NULL, FALSE);
-    printf("%s\n", buf);
-
+    WideCharToMultiByte(CP_ACP, 0, wszBuf, -1, buf, sizeof(buf), nullptr, FALSE);
+    printf("%s", buf);
+    fflush(stdout);
 #else
     // Linux, Mac, iOS, etc
     fprintf(stdout, "cocos2d: %s", buf);
     fflush(stdout);
 #endif
 
+#if (CC_TARGET_PLATFORM != CC_PLATFORM_WINRT)
     Director::getInstance()->getConsole()->log(buf);
+#endif
+
 }
 
 // XXX: Deprecated
@@ -189,6 +255,8 @@ void log(const char * format, ...)
     va_end(args);
 }
 
+#if (CC_TARGET_PLATFORM != CC_PLATFORM_WINRT)
+
 //
 // Console code
 //
@@ -197,41 +265,49 @@ Console::Console()
 : _listenfd(-1)
 , _running(false)
 , _endThread(false)
-, _userCommands(nullptr)
-, _maxUserCommands(0)
 , _sendDebugStrings(false)
 {
     // VS2012 doesn't support initializer list, so we create a new array and assign its elements to '_command'.
 	Command commands[] = {     
-        { "config", std::bind(&Console::commandConfig, this, std::placeholders::_1, std::placeholders::_2) },
-        { "debug msg on", [&](int fd, const char* command) {
-            _sendDebugStrings = true;
+        { "config", "Print the Configuration object", std::bind(&Console::commandConfig, this, std::placeholders::_1, std::placeholders::_2) },
+        { "debugmsg", "Whether or not to forward the debug messages on the console. Args: [on | off]", [&](int fd, const std::string& args) {
+            if( args.compare("on")==0 || args.compare("off")==0) {
+                _sendDebugStrings = (args.compare("on") == 0);
+            } else {
+                mydprintf(fd, "Debug message is: %s\n", _sendDebugStrings ? "on" : "off");
+            }
         } },
-        { "debug msg off", [&](int fd, const char* command) {
-            _sendDebugStrings = false;
+        { "exit", "Close connection to the console", std::bind(&Console::commandExit, this, std::placeholders::_1, std::placeholders::_2) },
+        { "fileutils", "Flush or print the FileUtils info. Args: [flush | ] ", std::bind(&Console::commandFileUtils, this, std::placeholders::_1, std::placeholders::_2) },
+        { "fps", "Turn on / off the FPS. Args: [on | off] ", [](int fd, const std::string& args) {
+            if( args.compare("on")==0 || args.compare("off")==0) {
+                bool state = (args.compare("on") == 0);
+                Director *dir = Director::getInstance();
+                Scheduler *sched = dir->getScheduler();
+                sched->performFunctionInCocosThread( std::bind(&Director::setDisplayStats, dir, state));
+            } else {
+                mydprintf(fd, "FPS is: %s\n", Director::getInstance()->isDisplayStats() ? "on" : "off");
+            }
         } },
-        { "exit", std::bind(&Console::commandExit, this, std::placeholders::_1, std::placeholders::_2) },
-        { "fileutils dump", std::bind(&Console::commandFileUtilsDump, this, std::placeholders::_1, std::placeholders::_2) },
-        { "fps on", [](int fd, const char* command) {
-            Director *dir = Director::getInstance();
-            Scheduler *sched = dir->getScheduler();
-            sched->performFunctionInCocosThread( std::bind(&Director::setDisplayStats, dir, true));
+        { "help", "Print this message", std::bind(&Console::commandHelp, this, std::placeholders::_1, std::placeholders::_2) },
+        { "projection", "Change or print the current projection. Args: [2d | 3d]", std::bind(&Console::commandProjection, this, std::placeholders::_1, std::placeholders::_2) },
+        { "resolution", "Change or print the window resolution. Args: [width height resolution_policy | ]", std::bind(&Console::commandResolution, this, std::placeholders::_1, std::placeholders::_2) },
+        { "scenegraph", "Print the scene graph", std::bind(&Console::commandSceneGraph, this, std::placeholders::_1, std::placeholders::_2) },
+        { "texture", "Flush or print the TextureCache info. Args: [flush | ] ", std::bind(&Console::commandTextures, this, std::placeholders::_1, std::placeholders::_2) },
+        { "director", "director commands, type -h or [director help] to list supported directives", std::bind(&Console::commandDirector, this, std::placeholders::_1, std::placeholders::_2) },
+        { "touch", "simulate touch event via console, type -h or [touch help] to list supported directives", std::bind(&Console::commandTouch, this, std::placeholders::_1, std::placeholders::_2) },
+        { "upload", "upload file. Args: [filename base64_encoded_data]", std::bind(&Console::commandUpload, this, std::placeholders::_1) },
+        { "version", "print version string ", [](int fd, const std::string& args) {
+            mydprintf(fd, "%s\n", cocos2dVersion());
         } },
-        { "fps off", [](int fd, const char* command) {
-            Director *dir = Director::getInstance();
-            Scheduler *sched = dir->getScheduler();
-            sched->performFunctionInCocosThread( std::bind(&Director::setDisplayStats, dir, false));
-        } },
-        { "help", std::bind(&Console::commandHelp, this, std::placeholders::_1, std::placeholders::_2) },
-        { "scene graph", std::bind(&Console::commandSceneGraph, this, std::placeholders::_1, std::placeholders::_2) },
-        { "textures", std::bind(&Console::commandTextures, this, std::placeholders::_1, std::placeholders::_2) },
     };
 
-    _maxCommands = sizeof(commands)/sizeof(commands[0]);
-	for (int i = 0; i < _maxCommands; ++i)
+     ;
+	for (int i = 0; i < sizeof(commands)/sizeof(commands[0]); ++i)
 	{
-		_commands[i] = commands[i];
+		_commands[commands[i].name] = commands[i];
 	}
+	_writablePath = FileUtils::getInstance()->getWritablePath();
 }
 
 Console::~Console()
@@ -241,25 +317,28 @@ Console::~Console()
 
 bool Console::listenOnTCP(int port)
 {
-    int listenfd, n;
+    int listenfd = -1, n;
     const int on = 1;
     struct addrinfo hints, *res, *ressave;
     char serv[30];
 
     snprintf(serv, sizeof(serv)-1, "%d", port );
-    serv[sizeof(serv)-1]=0;
 
     bzero(&hints, sizeof(struct addrinfo));
     hints.ai_flags = AI_PASSIVE;
     hints.ai_family = AF_INET; // AF_UNSPEC: Do we need IPv6 ?
     hints.ai_socktype = SOCK_STREAM;
 
-#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32)
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32) || (CC_TARGET_PLATFORM == CC_PLATFORM_WP8)
     WSADATA wsaData;
     n = WSAStartup(MAKEWORD(2, 2),&wsaData);
+
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WP8)
+    CCLogIPAddresses();
+#endif
 #endif
 
-    if ( (n = getaddrinfo(NULL, serv, &hints, &res)) != 0) {
+    if ( (n = getaddrinfo(nullptr, serv, &hints, &res)) != 0) {
         fprintf(stderr,"net_listen error for %s: %s", serv, gai_strerror(n));
         return false;
     }
@@ -275,10 +354,15 @@ bool Console::listenOnTCP(int port)
         if (bind(listenfd, res->ai_addr, res->ai_addrlen) == 0)
             break;          /* success */
 
-        close(listenfd);    /* bind error, close and try next one */
-    } while ( (res = res->ai_next) != NULL);
+/* bind error, close and try next one */
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32) || (CC_TARGET_PLATFORM == CC_PLATFORM_WP8)
+        closesocket(listenfd);
+#else
+        close(listenfd);
+#endif
+    } while ( (res = res->ai_next) != nullptr);
     
-    if (res == NULL) {
+    if (res == nullptr) {
         perror("net_listen:");
         freeaddrinfo(ressave);
         return false;
@@ -289,14 +373,14 @@ bool Console::listenOnTCP(int port)
     if (res->ai_family == AF_INET) {
         char buf[INET_ADDRSTRLEN] = "";
         struct sockaddr_in *sin = (struct sockaddr_in*) res->ai_addr;
-        if( inet_ntop(res->ai_family, &sin->sin_addr, buf, sizeof(buf)) != NULL )
+        if( inet_ntop(res->ai_family, &sin->sin_addr, buf, sizeof(buf)) != nullptr )
             cocos2d::log("Console: listening on  %s : %d", buf, ntohs(sin->sin_port));
         else
             perror("inet_ntop");
     } else if (res->ai_family == AF_INET6) {
         char buf[INET6_ADDRSTRLEN] = "";
         struct sockaddr_in6 *sin = (struct sockaddr_in6*) res->ai_addr;
-        if( inet_ntop(res->ai_family, &sin->sin6_addr, buf, sizeof(buf)) != NULL )
+        if( inet_ntop(res->ai_family, &sin->sin6_addr, buf, sizeof(buf)) != nullptr )
             cocos2d::log("Console: listening on  %s : %d", buf, ntohs(sin->sin6_port));
         else
             perror("inet_ntop");
@@ -304,7 +388,6 @@ bool Console::listenOnTCP(int port)
 
 
     freeaddrinfo(ressave);
-
     return listenOnFileDescriptor(listenfd);
 }
 
@@ -329,107 +412,550 @@ void Console::stop()
     }
 }
 
-void Console::setUserCommands(Command *commands, int numberOfCommands)
+void Console::addCommand(const Command& cmd)
 {
-    _userCommands = commands;
-    _maxUserCommands = numberOfCommands;
+    _commands[cmd.name]=cmd;
 }
-
 
 //
 // commands
 //
 
-void Console::commandHelp(int fd, const char* command)
+void Console::commandHelp(int fd, const std::string &args)
 {
     const char help[] = "\nAvailable commands:\n";
-    write(fd, help, sizeof(help));
-    for(int i=0; i<_maxCommands; ++i) {
-        write(fd,"\t",1);
-        write(fd, _commands[i].name, strlen(_commands[i].name));
-        write(fd,"\n",1);
-    }
-
-    // User commands
-    for(int i=0; i<_maxUserCommands; ++i) {
-        write(fd,"\t",1);
-        write(fd, _userCommands[i].name, strlen(_userCommands[i].name));
-        write(fd,"\n",1);
-    }
-
+    send(fd, help, sizeof(help),0);
+    for(auto it=_commands.begin();it!=_commands.end();++it)
+    {
+        auto cmd = it->second;
+        mydprintf(fd, "\t%s", cmd.name.c_str());
+        ssize_t tabs = strlen(cmd.name.c_str()) / 8;
+        tabs = 3 - tabs;
+        for(int j=0;j<tabs;j++){
+             mydprintf(fd, "\t");
+        }
+        mydprintf(fd,"%s\n", cmd.help.c_str());
+    } 
 }
 
-void Console::commandExit(int fd, const char *command)
+void Console::commandExit(int fd, const std::string &args)
 {
     FD_CLR(fd, &_read_set);
     _fds.erase(std::remove(_fds.begin(), _fds.end(), fd), _fds.end());
-    close(fd);
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32) || (CC_TARGET_PLATFORM == CC_PLATFORM_WP8)
+        closesocket(fd);
+#else
+        close(fd);
+#endif
 }
 
-void Console::commandSceneGraph(int fd, const char *command)
+void Console::commandSceneGraph(int fd, const std::string &args)
 {
     Scheduler *sched = Director::getInstance()->getScheduler();
     sched->performFunctionInCocosThread( std::bind(&printSceneGraphBoot, fd) );
 }
 
-void Console::commandFileUtilsDump(int fd, const char *command)
+void Console::commandFileUtils(int fd, const std::string &args)
 {
     Scheduler *sched = Director::getInstance()->getScheduler();
-    sched->performFunctionInCocosThread( std::bind(&printFileUtils, fd) );
+
+    if( args.compare("flush") == 0 )
+    {
+        FileUtils::getInstance()->purgeCachedEntries();
+    }
+    else if( args.length()==0)
+    {
+        sched->performFunctionInCocosThread( std::bind(&printFileUtils, fd) );
+    }
+    else
+    {
+        mydprintf(fd, "Unsupported argument: '%s'. Supported arguments: 'flush' or nothing", args.c_str());
+    }
 }
 
-void Console::commandConfig(int fd, const char *command)
+void Console::commandConfig(int fd, const std::string& args)
 {
     Scheduler *sched = Director::getInstance()->getScheduler();
-    sched->performFunctionInCocosThread( [&](){
+    sched->performFunctionInCocosThread( [=](){
         mydprintf(fd, "%s", Configuration::getInstance()->getInfo().c_str());
+        sendPrompt(fd);
     }
                                         );
 }
 
-void Console::commandTextures(int fd, const char *command)
+void Console::commandResolution(int fd, const std::string& args)
+{
+    if(args.length()==0) {
+        auto director = Director::getInstance();
+        Size points = director->getWinSize();
+        Size pixels = director->getWinSizeInPixels();
+        auto glview = director->getOpenGLView();
+        Size design = glview->getDesignResolutionSize();
+        ResolutionPolicy res = glview->getResolutionPolicy();
+        Rect visibleRect = glview->getVisibleRect();
+
+        mydprintf(fd, "Window Size:\n"
+                        "\t%d x %d (points)\n"
+                        "\t%d x %d (pixels)\n"
+                        "\t%d x %d (design resolution)\n"
+                        "Resolution Policy: %d\n"
+                        "Visible Rect:\n"
+                        "\torigin: %d x %d\n"
+                        "\tsize: %d x %d\n",
+                  (int)points.width, (int)points.height,
+                  (int)pixels.width, (int)pixels.height,
+                  (int)design.width, (int)design.height,
+                  (int)res,
+                  (int)visibleRect.origin.x, (int)visibleRect.origin.y,
+                  (int)visibleRect.size.width, (int)visibleRect.size.height
+                  );
+
+    } else {
+        int width, height, policy;
+
+        std::istringstream stream( args );
+        stream >> width >> height>> policy;
+
+        Scheduler *sched = Director::getInstance()->getScheduler();
+        sched->performFunctionInCocosThread( [=](){
+            Director::getInstance()->getOpenGLView()->setDesignResolutionSize(width, height, static_cast<ResolutionPolicy>(policy));
+        } );
+    }
+}
+
+void Console::commandProjection(int fd, const std::string& args)
+{
+    auto director = Director::getInstance();
+    Scheduler *sched = director->getScheduler();
+
+    if(args.length()==0)
+    {
+        char buf[20];
+        auto proj = director->getProjection();
+        switch (proj) {
+            case cocos2d::Director::Projection::_2D:
+                sprintf(buf,"2d");
+                break;
+            case cocos2d::Director::Projection::_3D:
+                sprintf(buf,"3d");
+                break;
+            case cocos2d::Director::Projection::CUSTOM:
+                sprintf(buf,"custom");
+                break;
+
+            default:
+                sprintf(buf,"unknown");
+                break;
+        }
+        mydprintf(fd, "Current projection: %s\n", buf);
+    }
+    else if( args.compare("2d") == 0)
+    {
+        sched->performFunctionInCocosThread( [=](){
+            director->setProjection(Director::Projection::_2D);
+        } );
+    }
+    else if( args.compare("3d") == 0)
+    {
+        sched->performFunctionInCocosThread( [=](){
+            director->setProjection(Director::Projection::_3D);
+        } );
+    }
+    else
+    {
+        mydprintf(fd, "Unsupported argument: '%s'. Supported arguments: '2d' or '3d'\n", args.c_str());
+    }
+}
+
+void Console::commandTextures(int fd, const std::string& args)
 {
     Scheduler *sched = Director::getInstance()->getScheduler();
-    sched->performFunctionInCocosThread( [&](){
-        mydprintf(fd, "%s", Director::getInstance()->getTextureCache()->getCachedTextureInfo().c_str());
+
+    if( args.compare("flush")== 0)
+    {
+        sched->performFunctionInCocosThread( [](){
+            Director::getInstance()->getTextureCache()->removeAllTextures();
+        }
+                                            );
     }
-                                        );
+    else if(args.length()==0)
+    {
+        sched->performFunctionInCocosThread( [=](){
+            mydprintf(fd, "%s", Director::getInstance()->getTextureCache()->getCachedTextureInfo().c_str());
+            sendPrompt(fd);
+        }
+                                            );
+    }
+    else
+    {
+        mydprintf(fd, "Unsupported argument: '%s'. Supported arguments: 'flush' or nothing", args.c_str());
+    }
 }
 
+
+void Console::commandDirector(int fd, const std::string& args)
+{
+     auto director = Director::getInstance();
+    if(args =="help" || args == "-h")
+    {
+        const char help[] = "available director directives:\n"
+                            "\tpause, pause all scheduled timers, the draw rate will be 4 FPS to reduce CPU consumption\n"
+                            "\tend, exit this app.\n"
+                            "\tresume, resume all scheduled timers\n"
+                            "\tstop, Stops the animation. Nothing will be drawn.\n"
+                            "\tstart, Restart the animation again, Call this function only if [director stop] was called earlier\n";
+         send(fd, help, sizeof(help) - 1,0);
+    }
+    else if(args == "pause")
+    {
+        Scheduler *sched = director->getScheduler();
+            sched->performFunctionInCocosThread( [](){
+            Director::getInstance()->pause();
+        }
+                                        );
+
+    }
+    else if(args == "resume")
+    {
+        director->resume();
+    }
+    else if(args == "stop")
+    {
+        Scheduler *sched = director->getScheduler();
+        sched->performFunctionInCocosThread( [](){
+            Director::getInstance()->stopAnimation();
+        }
+                                        );
+    }
+    else if(args == "start")
+    {
+        director->startAnimation();
+    }
+    else if(args == "end")
+    {
+        director->end();
+    }
+
+}
+
+void Console::commandTouch(int fd, const std::string& args)
+{
+    if(args =="help" || args == "-h")
+    {
+        const char help[] = "available touch directives:\n"
+                            "\ttap x y: simulate touch tap at (x,y)\n"
+                            "\tswipe x1 y1 x2 y2: simulate touch swipe from (x1,y1) to (x2,y2).\n";
+         send(fd, help, sizeof(help) - 1,0);
+    }
+    else
+    {
+        auto argv = split(args,' ');
+        
+        if(argv.size() == 0)
+        {
+            return;
+        }
+
+        if(argv[0]=="tap")
+        {
+            if((argv.size() == 3) && (isFloat(argv[1]) && isFloat(argv[2])))
+            {
+                
+                float x = utils::atof(argv[1].c_str());
+                float y = utils::atof(argv[2].c_str());
+
+                srand ((unsigned)time(nullptr));
+                _touchId = rand();
+                Scheduler *sched = Director::getInstance()->getScheduler();
+                sched->performFunctionInCocosThread( [&](){
+                    Director::getInstance()->getOpenGLView()->handleTouchesBegin(1, &_touchId, &x, &y);
+                    Director::getInstance()->getOpenGLView()->handleTouchesEnd(1, &_touchId, &x, &y);
+                });
+            }
+            else 
+            {
+                const char msg[] = "touch: invalid arguments.\n";
+                send(fd, msg, sizeof(msg) - 1, 0);
+            }
+            return;
+        }
+
+        if(argv[0]=="swipe")
+        {
+            if((argv.size() == 5) 
+                && (isFloat(argv[1])) && (isFloat(argv[2]))
+                && (isFloat(argv[3])) && (isFloat(argv[4])))
+            {
+                
+                float x1 = utils::atof(argv[1].c_str());
+                float y1 = utils::atof(argv[2].c_str());
+                float x2 = utils::atof(argv[3].c_str());
+                float y2 = utils::atof(argv[4].c_str());
+
+                srand ((unsigned)time(nullptr));
+                _touchId = rand();
+
+                Scheduler *sched = Director::getInstance()->getScheduler();
+                sched->performFunctionInCocosThread( [=](){
+                    float tempx = x1, tempy = y1;
+                    Director::getInstance()->getOpenGLView()->handleTouchesBegin(1, &_touchId, &tempx, &tempy);
+                });
+
+                float dx = std::abs(x1 - x2);
+                float dy = std::abs(y1 - y2);
+                float _x_ = x1, _y_ = y1;
+                if(dx > dy)
+                {
+                    while(dx > 1)
+                    {
+                        
+                        if(x1 < x2)
+                        {
+                            _x_ += 1;
+                        }
+                        if(x1 > x2)
+                        {
+                            _x_ -= 1;
+                        }
+                        if(y1 < y2)
+                        {
+                            _y_ += dy/dx;
+                        }
+                        if(y1 > y2)
+                        {
+                            _y_ -= dy/dx;
+                        }
+                        sched->performFunctionInCocosThread( [=](){
+                            float tempx = _x_, tempy = _y_;
+                            Director::getInstance()->getOpenGLView()->handleTouchesMove(1, &_touchId, &tempx, &tempy);
+                        });
+                        dx -= 1;
+                    }
+                    
+                }
+                else
+                {
+                    while(dy > 1)
+                    {
+                        if(x1 < x2)
+                        {
+                            _x_ += dx/dy;
+                        }
+                        if(x1 > x2)
+                        {
+                            _x_ -= dx/dy;
+                        }
+                        if(y1 < y2)
+                        {
+                            _y_ += 1;
+                        }
+                        if(y1 > y2)
+                        {
+                            _y_ -= 1;
+                        }
+                        sched->performFunctionInCocosThread( [=](){
+                            float tempx = _x_, tempy = _y_;
+                            Director::getInstance()->getOpenGLView()->handleTouchesMove(1, &_touchId, &tempx, &tempy);
+                        });
+                       dy -= 1;
+                    }
+                    
+                }
+
+                sched->performFunctionInCocosThread( [=](){
+                    float tempx = x2, tempy = y2;
+                    Director::getInstance()->getOpenGLView()->handleTouchesEnd(1, &_touchId, &tempx, &tempy);
+                });
+
+            }
+            else 
+            {
+                const char msg[] = "touch: invalid arguments.\n";
+                send(fd, msg, sizeof(msg) - 1, 0);
+            }
+            
+        }
+
+    }
+}
+
+static char invalid_filename_char[] = {':', '/', '\\', '?', '%', '*', '<', '>', '"', '|', '\r', '\n', '\t'};
+
+void Console::commandUpload(int fd)
+{
+    ssize_t n, rc;
+    char buf[512], c;
+    char *ptr = buf;
+    //read file name
+    for( n = 0; n < sizeof(buf) - 1; n++ )
+    {
+        if( (rc = recv(fd, &c, 1, 0)) ==1 ) 
+        {
+            for(char x : invalid_filename_char)
+            {
+                if(c == x)
+                {
+                    const char err[] = "upload: invalid file name!\n";
+                    send(fd, err, sizeof(err),0);
+                    return;
+                }
+            }
+            if(c == ' ') 
+            {
+                break;
+            }
+            *ptr++ = c;
+        } 
+        else if( rc == 0 ) 
+        {
+            break;
+        } 
+        else if( errno == EINTR ) 
+        {
+            continue;
+        } 
+        else 
+        {
+            break;
+        }
+    }
+    *ptr = 0;
+
+    std::string filepath = _writablePath + std::string(buf);
+
+    FILE* fp = fopen(filepath.c_str(), "wb");
+    if(!fp)
+    {
+        const char err[] = "can't create file!\n";
+        send(fd, err, sizeof(err),0);
+        return;
+    }
+    
+    while (true) 
+    {
+        char data[4];
+        for(int i = 0; i < 4; i++)
+        {
+            data[i] = '=';
+        }
+        bool more_data;
+        readBytes(fd, data, 4, &more_data);
+        if(!more_data)
+        {
+            break;
+        }
+        unsigned char *decode;
+        unsigned char *in = (unsigned char *)data;
+        int dt = base64Decode(in, 4, &decode);
+        for(int i = 0; i < dt; i++)
+        {
+            fwrite(decode+i, 1, 1, fp);
+        }
+        free(decode);
+    }
+    fclose(fp);
+}
+
+ssize_t Console::readBytes(int fd, char* buffer, size_t maxlen, bool* more)
+{
+    size_t n, rc;
+    char c, *ptr = buffer;
+    *more = false;
+    for( n = 0; n < maxlen; n++ ) {
+        if( (rc = recv(fd, &c, 1, 0)) ==1 ) {
+            *ptr++ = c;
+            if(c == '\n') {
+                return n;
+            }
+        } else if( rc == 0 ) {
+            return 0;
+        } else if( errno == EINTR ) {
+            continue;
+        } else {
+            return -1;
+        }
+    }
+    *more = true;
+    return n;
+}
 
 bool Console::parseCommand(int fd)
 {
-    auto r = readline(fd);
-    if(r < 1)
+    char buf[512];
+    bool more_data;
+    auto h = readBytes(fd, buf, 6, &more_data);
+    if( h < 0)
+    {
         return false;
-
-    bool found=false;
-    for(int i=0; i < _maxCommands; ++i) {
-        if( strncmp(_buffer, _commands[i].name,strlen(_commands[i].name)) == 0 ) {
-            // XXX TODO FIXME
-            // Ideally this loop should execute the function in the cocos2d according to a variable
-            // But clang crashes in runtime when doing that (bug in clang, not in the code).
-            // So, unfortunately, the only way to fix it was to move that logic to the callback itself
-            _commands[i].callback(fd, _buffer);
-            found = true;
-            break;
+    }
+    if(strncmp(buf, "upload", 6) == 0)
+    {
+        char c = '\0';
+        recv(fd, &c, 1, 0);
+        if(c == ' ')
+        {
+            commandUpload(fd);
+            sendPrompt(fd);
+            return true;
+        }
+        else
+        {
+            const char err[] = "upload: invalid args! Type 'help' for options\n";
+            send(fd, err, sizeof(err),0);
+            sendPrompt(fd);
+            return true;
+            
         }
     }
-
-    // user commands
-    for(int i=0; i < _maxUserCommands && !found; ++i) {
-        if( strncmp(_buffer, _userCommands[i].name,strlen(_userCommands[i].name)) == 0 ) {
-            _userCommands[i].callback(fd, _buffer);
-            found = true;
-            break;
+    if(!more_data)
+    {
+        buf[h] = 0;
+    }
+    else
+    {
+        char *pb = buf + 6;
+        auto r = readline(fd, pb, sizeof(buf)-6);
+        if(r < 0)
+        {
+            const char err[] = "Unknown error!\n";
+            sendPrompt(fd);
+            send(fd, err, sizeof(err),0);
+            return false;
         }
     }
+    std::string cmdLine;
 
-    if(!found && strcmp(_buffer, "\r\n")!=0) {
+    std::vector<std::string> args;
+    cmdLine = std::string(buf);
+   
+    args = split(cmdLine, ' ');
+    if(args.empty())
+    {
         const char err[] = "Unknown command. Type 'help' for options\n";
-        write(fd, err, sizeof(err));
+        send(fd, err, sizeof(err),0);
+        sendPrompt(fd);
+        return true;
     }
 
+    auto it = _commands.find(trim(args[0]));
+    if(it != _commands.end())
+    {
+        std::string args2;
+        for(size_t i = 1; i < args.size(); ++i)
+        {   
+            if(i > 1)
+            {
+                args2 += ' ';
+            }
+            args2 += trim(args[i]);
+            
+        }
+        auto cmd = it->second;
+        cmd.callback(fd, args2);
+    }else if(strcmp(buf, "\r\n") != 0) {
+        const char err[] = "Unknown command. Type 'help' for options\n";
+        send(fd, err, sizeof(err),0);
+    }
     sendPrompt(fd);
 
     return true;
@@ -438,25 +964,19 @@ bool Console::parseCommand(int fd)
 //
 // Helpers
 //
-void Console::sendPrompt(int fd)
+
+
+ssize_t Console::readline(int fd, char* ptr, size_t maxlen)
 {
-    const char prompt[] = "\n> ";
-    write(fd, prompt, sizeof(prompt));
-}
+    size_t n, rc;
+    char c;
 
-ssize_t Console::readline(int fd)
-{
-    int maxlen = sizeof(_buffer)-1;
-    ssize_t n, rc;
-    char c, *ptr;
-
-    ptr = _buffer;
-
-    for( n=1; n<maxlen; n++ ) {
-        if( (rc = read(fd, &c, 1 )) ==1 ) {
+    for( n = 0; n < maxlen - 1; n++ ) {
+        if( (rc = recv(fd, &c, 1, 0)) ==1 ) {
             *ptr++ = c;
-            if( c=='\n' )
+            if(c == '\n') {
                 break;
+            }
         } else if( rc == 0 ) {
             return 0;
         } else if( errno == EINTR ) {
@@ -469,6 +989,7 @@ ssize_t Console::readline(int fd)
     *ptr = 0;
     return n;
 }
+
 
 void Console::addClient()
 {
@@ -501,7 +1022,6 @@ void Console::log(const char* buf)
 //
 // Main Loop
 //
-
 void Console::loop()
 {
     fd_set copy_set;
@@ -516,13 +1036,14 @@ void Console::loop()
     timeout.tv_sec = 0;
 
     /* 0.016 seconds. Wake up once per frame at 60PFS */
-    timeout.tv_usec = 016000;
+    timeout.tv_usec = 16000;
 
     while(!_endThread) {
 
         copy_set = _read_set;
         timeout_copy = timeout;
-        int nready = select(_maxfd+1, &copy_set, NULL, NULL, &timeout_copy);
+        
+        int nready = select(_maxfd+1, &copy_set, nullptr, nullptr, &timeout_copy);
 
         if( nready == -1 )
         {
@@ -547,8 +1068,28 @@ void Console::loop()
             /* data from client */
             std::vector<int> to_remove;
             for(const auto &fd: _fds) {
-                if(FD_ISSET(fd,&copy_set)) {
-                    if( ! parseCommand(fd) ) {
+                if(FD_ISSET(fd,&copy_set)) 
+                {
+                    //fix Bug #4302 Test case ConsoleTest--ConsoleUploadFile crashed on Linux
+                    //On linux, if you send data to a closed socket, the sending process will 
+                    //receive a SIGPIPE, which will cause linux system shutdown the sending process.
+                    //Add this ioctl code to check if the socket has been closed by peer.
+                    
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32) || (CC_TARGET_PLATFORM == CC_PLATFORM_WP8)
+                    u_long n = 0;
+                    ioctlsocket(fd, FIONREAD, &n);
+#else
+                    int n = 0;
+                    ioctl(fd, FIONREAD, &n);
+#endif
+                    if(n == 0)
+                    {
+                        //no data received, or fd is closed
+                        continue;
+                    }
+
+                    if( ! parseCommand(fd) )
+                    {
                         to_remove.push_back(fd);
                     }
                     if(--nready <= 0)
@@ -568,7 +1109,7 @@ void Console::loop()
             _DebugStringsMutex.lock();
             for(const auto &str : _DebugStrings) {
                 for(const auto &fd : _fds) {
-                    write(fd, str.c_str(), str.length());
+                    send(fd, str.c_str(), str.length(),0);
                 }
             }
             _DebugStrings.clear();
@@ -578,10 +1119,24 @@ void Console::loop()
 
     // clean up: ignore stdin, stdout and stderr
     for(const auto &fd: _fds )
+    {
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32) || (CC_TARGET_PLATFORM == CC_PLATFORM_WP8)
+        closesocket(fd);
+#else
         close(fd);
+#endif
+    }
+    
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WIN32) || (CC_TARGET_PLATFORM == CC_PLATFORM_WP8)
+    closesocket(_listenfd);
+	WSACleanup();
+#else
     close(_listenfd);
-
+#endif
     _running = false;
 }
+
+#endif /* #if (CC_TARGET_PLATFORM != CC_PLATFORM_WINRT) */
+
 
 NS_CC_END

@@ -25,29 +25,35 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ****************************************************************************/
 
-#include "CCTransition.h"
-#include "CCDirector.h"
-#include "CCActionInterval.h"
-#include "CCActionInstant.h"
-#include "CCActionEase.h"
-#include "CCActionCamera.h"
-#include "CCActionTiledGrid.h"
-#include "CCActionGrid.h"
-#include "CCLayer.h"
-#include "CCRenderTexture.h"
-#include "CCNodeGrid.h"
+#include "2d/CCTransition.h"
+#include "base/CCDirector.h"
+#include "2d/CCActionInterval.h"
+#include "2d/CCActionInstant.h"
+#include "2d/CCActionEase.h"
+#include "2d/CCActionCamera.h"
+#include "2d/CCActionTiledGrid.h"
+#include "2d/CCActionGrid.h"
+#include "2d/CCLayer.h"
+#include "2d/CCRenderTexture.h"
+#include "2d/CCNodeGrid.h"
 
 NS_CC_BEGIN
 
 const unsigned int kSceneFade = 0xFADEFADE;
 
 TransitionScene::TransitionScene()
+: _inScene(nullptr)
+, _outScene(nullptr)
+, _duration(0.0f)
+, _isInSceneOnTop(false)
+, _isSendCleanupToScene(false)
 {
 }
+
 TransitionScene::~TransitionScene()
 {
-    _inScene->release();
-    _outScene->release();
+    CC_SAFE_RELEASE(_inScene);
+    CC_SAFE_RELEASE(_outScene);
 }
 
 TransitionScene * TransitionScene::create(float t, Scene *scene)
@@ -97,36 +103,33 @@ void TransitionScene::sceneOrder()
     _isInSceneOnTop = true;
 }
 
-void TransitionScene::draw()
+void TransitionScene::draw(Renderer *renderer, const Mat4 &transform, uint32_t flags)
 {
-    Scene::draw();
+    Scene::draw(renderer, transform, flags);
 
     if( _isInSceneOnTop ) {
-        _outScene->visit();
-        _inScene->visit();
+        _outScene->visit(renderer, transform, flags);
+        _inScene->visit(renderer, transform, flags);
     } else {
-        _inScene->visit();
-        _outScene->visit();
+        _inScene->visit(renderer, transform, flags);
+        _outScene->visit(renderer, transform, flags);
     }
 }
 
 void TransitionScene::finish()
 {
-    kmMat4 identity;
-    kmMat4Identity(&identity);
-
     // clean up
     _inScene->setVisible(true);
-    _inScene->setPosition(Point(0,0));
+    _inScene->setPosition(Vec2(0,0));
     _inScene->setScale(1.0f);
     _inScene->setRotation(0.0f);
-    _inScene->setAdditionalTransform(identity);
+    _inScene->setAdditionalTransform(nullptr);
 
     _outScene->setVisible(false);
-    _outScene->setPosition(Point(0,0));
+    _outScene->setPosition(Vec2(0,0));
     _outScene->setScale(1.0f);
     _outScene->setRotation(0.0f);
-    _outScene->setAdditionalTransform(identity);
+    _outScene->setAdditionalTransform(nullptr);
 
     //[self schedule:@selector(setNewScene:) interval:0];
     this->schedule(schedule_selector(TransitionScene::setNewScene), 0);
@@ -252,8 +255,8 @@ void TransitionRotoZoom:: onEnter()
     _inScene->setScale(0.001f);
     _outScene->setScale(1.0f);
 
-    _inScene->setAnchorPoint(Point(0.5f, 0.5f));
-    _outScene->setAnchorPoint(Point(0.5f, 0.5f));
+    _inScene->setAnchorPoint(Vec2(0.5f, 0.5f));
+    _outScene->setAnchorPoint(Vec2(0.5f, 0.5f));
 
     ActionInterval *rotozoom = (ActionInterval*)(Sequence::create
     (
@@ -307,11 +310,11 @@ void TransitionJumpZoom::onEnter()
     Size s = Director::getInstance()->getWinSize();
 
     _inScene->setScale(0.5f);
-    _inScene->setPosition(Point(s.width, 0));
-    _inScene->setAnchorPoint(Point(0.5f, 0.5f));
-    _outScene->setAnchorPoint(Point(0.5f, 0.5f));
+    _inScene->setPosition(Vec2(s.width, 0));
+    _inScene->setAnchorPoint(Vec2(0.5f, 0.5f));
+    _outScene->setAnchorPoint(Vec2(0.5f, 0.5f));
 
-    ActionInterval *jump = JumpBy::create(_duration/4, Point(-s.width,0), s.width/4, 2);
+    ActionInterval *jump = JumpBy::create(_duration/4, Vec2(-s.width,0), s.width/4, 2);
     ActionInterval *scaleIn = ScaleTo::create(_duration/4, 1.0f);
     ActionInterval *scaleOut = ScaleTo::create(_duration/4, 0.5f);
 
@@ -376,7 +379,7 @@ void TransitionMoveInL::onEnter()
  
 ActionInterval* TransitionMoveInL::action()
 {
-    return MoveTo::create(_duration, Point(0,0));
+    return MoveTo::create(_duration, Vec2(0,0));
 }
 
 ActionInterval* TransitionMoveInL::easeActionWithAction(ActionInterval* action)
@@ -388,7 +391,7 @@ ActionInterval* TransitionMoveInL::easeActionWithAction(ActionInterval* action)
 void TransitionMoveInL::initScenes()
 {
     Size s = Director::getInstance()->getWinSize();
-    _inScene->setPosition(Point(-s.width,0));
+    _inScene->setPosition(Vec2(-s.width,0));
 }
 
 //
@@ -416,7 +419,7 @@ TransitionMoveInR* TransitionMoveInR::create(float t, Scene* scene)
 void TransitionMoveInR::initScenes()
 {
     Size s = Director::getInstance()->getWinSize();
-    _inScene->setPosition( Point(s.width,0) );
+    _inScene->setPosition( Vec2(s.width,0) );
 }
 
 //
@@ -444,7 +447,7 @@ TransitionMoveInT* TransitionMoveInT::create(float t, Scene* scene)
 void TransitionMoveInT::initScenes()
 {
     Size s = Director::getInstance()->getWinSize();
-    _inScene->setPosition( Point(0,s.height) );
+    _inScene->setPosition( Vec2(0,s.height) );
 }
 
 //
@@ -472,7 +475,7 @@ TransitionMoveInB* TransitionMoveInB::create(float t, Scene* scene)
 void TransitionMoveInB::initScenes()
 {
     Size s = Director::getInstance()->getWinSize();
-    _inScene->setPosition( Point(0,-s.height) );
+    _inScene->setPosition( Vec2(0,-s.height) );
 }
 
 
@@ -520,13 +523,13 @@ void TransitionSlideInL::sceneOrder()
 void TransitionSlideInL:: initScenes()
 {
     Size s = Director::getInstance()->getWinSize();
-    _inScene->setPosition( Point(-(s.width-ADJUST_FACTOR),0) );
+    _inScene->setPosition( Vec2(-(s.width-ADJUST_FACTOR),0) );
 }
 
 ActionInterval* TransitionSlideInL::action()
 {
     Size s = Director::getInstance()->getWinSize();
-    return MoveBy::create(_duration, Point(s.width-ADJUST_FACTOR,0));
+    return MoveBy::create(_duration, Vec2(s.width-ADJUST_FACTOR,0));
 }
 
 ActionInterval* TransitionSlideInL::easeActionWithAction(ActionInterval* action)
@@ -576,14 +579,14 @@ void TransitionSlideInR::sceneOrder()
 void TransitionSlideInR::initScenes()
 {
     Size s = Director::getInstance()->getWinSize();
-    _inScene->setPosition( Point(s.width-ADJUST_FACTOR,0) );
+    _inScene->setPosition( Vec2(s.width-ADJUST_FACTOR,0) );
 }
 
 
 ActionInterval* TransitionSlideInR:: action()
 {
     Size s = Director::getInstance()->getWinSize();
-    return MoveBy::create(_duration, Point(-(s.width-ADJUST_FACTOR),0));
+    return MoveBy::create(_duration, Vec2(-(s.width-ADJUST_FACTOR),0));
 }
 
 
@@ -617,14 +620,14 @@ void TransitionSlideInT::sceneOrder()
 void TransitionSlideInT::initScenes()
 {
     Size s = Director::getInstance()->getWinSize();
-    _inScene->setPosition( Point(0,s.height-ADJUST_FACTOR) );
+    _inScene->setPosition( Vec2(0,s.height-ADJUST_FACTOR) );
 }
 
 
 ActionInterval* TransitionSlideInT::action()
 {
     Size s = Director::getInstance()->getWinSize();
-    return MoveBy::create(_duration, Point(0,-(s.height-ADJUST_FACTOR)));
+    return MoveBy::create(_duration, Vec2(0,-(s.height-ADJUST_FACTOR)));
 }
 
 //
@@ -657,14 +660,14 @@ void TransitionSlideInB::sceneOrder()
 void TransitionSlideInB:: initScenes()
 {
     Size s = Director::getInstance()->getWinSize();
-    _inScene->setPosition( Point(0,-(s.height-ADJUST_FACTOR)) );
+    _inScene->setPosition( Vec2(0,-(s.height-ADJUST_FACTOR)) );
 }
 
 
 ActionInterval* TransitionSlideInB:: action()
 {
     Size s = Director::getInstance()->getWinSize();
-    return MoveBy::create(_duration, Point(0,s.height-ADJUST_FACTOR));
+    return MoveBy::create(_duration, Vec2(0,s.height-ADJUST_FACTOR));
 }
 
 //
@@ -696,8 +699,8 @@ void TransitionShrinkGrow::onEnter()
     _inScene->setScale(0.001f);
     _outScene->setScale(1.0f);
 
-    _inScene->setAnchorPoint(Point(2/3.0f,0.5f));
-    _outScene->setAnchorPoint(Point(1/3.0f,0.5f));    
+    _inScene->setAnchorPoint(Vec2(2/3.0f,0.5f));
+    _outScene->setAnchorPoint(Vec2(1/3.0f,0.5f));    
 
     ActionInterval* scaleOut = ScaleTo::create(_duration, 0.01f);
     ActionInterval* scaleIn = ScaleTo::create(_duration, 1.0f);
@@ -1258,7 +1261,7 @@ TransitionCrossFade* TransitionCrossFade::create(float t, Scene* scene)
     return nullptr;
 }
 
-void TransitionCrossFade::draw()
+void TransitionCrossFade::draw(Renderer *renderer, const Mat4 &transform, uint32_t flags)
 {
     // override draw since both scenes (textures) are rendered in 1 scene
 }
@@ -1281,9 +1284,9 @@ void TransitionCrossFade::onEnter()
         return;
     }
 
-    inTexture->getSprite()->setAnchorPoint( Point(0.5f,0.5f) );
-    inTexture->setPosition( Point(size.width/2, size.height/2) );
-    inTexture->setAnchorPoint( Point(0.5f,0.5f) );
+    inTexture->getSprite()->setAnchorPoint( Vec2(0.5f,0.5f) );
+    inTexture->setPosition( Vec2(size.width/2, size.height/2) );
+    inTexture->setAnchorPoint( Vec2(0.5f,0.5f) );
 
     // render inScene to its texturebuffer
     inTexture->begin();
@@ -1292,9 +1295,9 @@ void TransitionCrossFade::onEnter()
 
     // create the second render texture for outScene
     RenderTexture* outTexture = RenderTexture::create((int)size.width, (int)size.height);
-    outTexture->getSprite()->setAnchorPoint( Point(0.5f,0.5f) );
-    outTexture->setPosition( Point(size.width/2, size.height/2) );
-    outTexture->setAnchorPoint( Point(0.5f,0.5f) );
+    outTexture->getSprite()->setAnchorPoint( Vec2(0.5f,0.5f) );
+    outTexture->setPosition( Vec2(size.width/2, size.height/2) );
+    outTexture->setAnchorPoint( Vec2(0.5f,0.5f) );
 
     // render outScene to its texturebuffer
     outTexture->begin();
@@ -1407,19 +1410,19 @@ void TransitionTurnOffTiles::onExit()
     TransitionScene::onExit();
 }
 
-void TransitionTurnOffTiles::draw()
+void TransitionTurnOffTiles::draw(Renderer *renderer, const Mat4 &transform, uint32_t flags)
 {
-    Scene::draw();
+    Scene::draw(renderer, transform, flags);
     
     if( _isInSceneOnTop )
     {
-        _outSceneProxy->visit();
-        _inScene->visit();
+        _outSceneProxy->visit(renderer, transform, flags);
+        _inScene->visit(renderer, transform, flags);
     } 
     else
     {
-        _inScene->visit();
-        _outSceneProxy->visit();
+        _inScene->visit(renderer, transform, flags);
+        _outSceneProxy->visit(renderer, transform, flags);
     }
 }
 
@@ -1487,10 +1490,10 @@ void TransitionSplitCols::switchTargetToInscene()
     _gridProxy->setTarget(_inScene);
 }
 
-void TransitionSplitCols::draw()
+void TransitionSplitCols::draw(Renderer *renderer, const Mat4 &transform, uint32_t flags)
 {
-    Scene::draw();
-    _gridProxy->visit();
+    Scene::draw(renderer, transform, flags);
+    _gridProxy->visit(renderer, transform, flags);
 }
 
 void TransitionSplitCols::onExit()
@@ -1603,19 +1606,19 @@ void TransitionFadeTR::onExit()
     TransitionScene::onExit();
 }
 
-void TransitionFadeTR::draw()
+void TransitionFadeTR::draw(Renderer *renderer, const Mat4 &transform, uint32_t flags)
 {
-    Scene::draw();
+    Scene::draw(renderer, transform, flags);
     
     if( _isInSceneOnTop )
     {
-        _outSceneProxy->visit();
-        _inScene->visit();
+        _outSceneProxy->visit(renderer, transform, flags);
+        _inScene->visit(renderer, transform, flags);
     } 
     else
     {
-        _inScene->visit();
-        _outSceneProxy->visit();
+        _inScene->visit(renderer, transform, flags);
+        _outSceneProxy->visit(renderer, transform, flags);
     }
 }
 

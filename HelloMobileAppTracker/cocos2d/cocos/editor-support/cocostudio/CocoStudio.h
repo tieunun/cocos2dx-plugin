@@ -47,7 +47,6 @@ THE SOFTWARE.
 #include "cocostudio/CCDataReaderHelper.h"
 #include "cocostudio/CCSpriteFrameCacheHelper.h"
 #include "cocostudio/CCTransformHelp.h"
-#include "cocostudio/CCTweenFunction.h"
 #include "cocostudio/CCUtilMath.h"
 #include "cocostudio/CCComBase.h"
 #include "cocostudio/CCComAttribute.h"
@@ -59,5 +58,10 @@ THE SOFTWARE.
 #include "cocostudio/CCSGUIReader.h"
 #include "cocostudio/CCSSceneReader.h"
 #include "cocostudio/TriggerBase.h"
+#include "cocostudio/ActionTimeline/CCNodeReader.h"
+#include "cocostudio/ActionTimeline/CCActionTimelineCache.h"
+#include "cocostudio/ActionTimeline/CCFrame.h"
+#include "cocostudio/ActionTimeline/CCTimeLine.h"
+#include "cocostudio/ActionTimeline/CCActionTimeline.h"
 
 #endif

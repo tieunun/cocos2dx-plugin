@@ -29,8 +29,11 @@ THE SOFTWARE.
 #include "cocostudio/DictionaryHelper.h"
 
 namespace cocostudio {
+    
+class CocoLoader;
+struct stExpCocoNode;
 
-class ActionManagerEx:public cocos2d::Object
+class ActionManagerEx:public cocos2d::Ref
 {
 public:
 
@@ -95,7 +98,9 @@ public:
 	ActionObject* playActionByName(const char* jsonName,const char* actionName, cocos2d::CallFunc* func);
 
 	/*init properties with json dictionay*/
-	void initWithDictionary(const char* jsonName,const rapidjson::Value &dic, Object* root);
+	void initWithDictionary(const char* jsonName,const rapidjson::Value &dic, Ref* root);
+    void initWithBinary(const char* file, Ref* root,  CocoLoader* cocoLoader, stExpCocoNode*	pCocoNode);
+
 	/**
 	* Release all actions.
 	*

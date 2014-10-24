@@ -65,10 +65,10 @@ public:
     virtual void setText(const char* pText);
     virtual const char* getText(void);
     virtual void setPlaceHolder(const char* pText);
-    virtual void setPosition(const Point& pos);
+    virtual void setPosition(const Vec2& pos);
 	virtual void setVisible(bool visible);
     virtual void setContentSize(const Size& size);
-    virtual void setAnchorPoint(const Point& anchorPoint);
+    virtual void setAnchorPoint(const Vec2& anchorPoint);
     /**
      * @js NA
      * @lua NA
@@ -84,8 +84,8 @@ public:
     virtual void onEnter(void);
 private:
 
-    LabelTTF* _label;
-    LabelTTF* _labelPlaceHolder;
+    Label* _label;
+    Label* _labelPlaceHolder;
     EditBox::InputMode    _editBoxInputMode;
     EditBox::InputFlag    _editBoxInputFlag;
     EditBox::KeyboardReturnType  _keyboardReturnType;

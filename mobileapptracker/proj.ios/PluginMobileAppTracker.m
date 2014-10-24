@@ -184,6 +184,117 @@ MATSDKDelegate *matDelegate = nil;
     }
 }
 
+- (void)measureActionId:(NSNumber *)eventId
+{
+    // count of params that precede the eventItem params
+    const int COUNT_FIXED_PARAMS = 1;
+    
+    [self measureActionIdInternal:[NSMutableDictionary dictionaryWithObject:eventId forKey:@"Param1"] countOfFixedParams:COUNT_FIXED_PARAMS];
+}
+
+- (void)measureActionIdWithRefId:(NSMutableDictionary *)params
+{
+    // count of params that precede the eventItem params
+    const int COUNT_FIXED_PARAMS = 2;
+    
+    [self measureActionIdInternal:params countOfFixedParams:COUNT_FIXED_PARAMS];
+}
+
+- (void)measureActionIdWithRevenue:(NSMutableDictionary *)params
+{
+    // count of params that precede the eventItem params
+    const int COUNT_FIXED_PARAMS = 4;
+    
+    [self measureActionIdInternal:params countOfFixedParams:COUNT_FIXED_PARAMS];
+}
+
+- (void)measureActionIdWithEventItems:(NSMutableDictionary *)params
+{
+    // count of params that precede the eventItem params
+    const int COUNT_FIXED_PARAMS = 4;
+    
+    [self measureActionIdInternal:params countOfFixedParams:COUNT_FIXED_PARAMS];
+}
+
+- (void)measureActionIdWithIAPReceipt:(NSMutableDictionary *)params
+{
+    // count of params that precede the eventItem params
+    const int COUNT_FIXED_PARAMS = 7;
+    
+    [self measureActionIdInternal:params countOfFixedParams:COUNT_FIXED_PARAMS];
+}
+
+- (void)measureActionIdInternal:(NSMutableDictionary *)params countOfFixedParams:(NSUInteger)countFixedParams
+{
+    NSNumber* numEventId = (NSNumber *) [params objectForKey:@"Param1"];
+    NSInteger eventId = [numEventId integerValue];
+    
+    NSString* refId = nil;
+    
+    if(2 <= countFixedParams && [params objectForKey:@"Param2"])
+    {
+        refId = (NSString *) [params objectForKey:@"Param2"];
+    }
+    
+    NSNumber *numRevenue = nil;
+    NSString *currencyCode = nil;
+    
+    float revenue = 0.0f;
+    
+    if(4 <= countFixedParams)
+    {
+        if([params objectForKey:@"Param3"])
+        {
+            numRevenue = (NSNumber *) [params objectForKey:@"Param3"];
+            
+            revenue = [numRevenue floatValue];
+        }
+        
+        if([params objectForKey:@"Param4"])
+        {
+            currencyCode = (NSString *) [params objectForKey:@"Param4"];
+        }
+    }
+    
+    NSNumber *numTransactionState = nil;
+    NSString *strReceipt = nil;
+    
+    int transactionState = -1;
+    NSData *receipt = nil;
+    
+    if(7 == countFixedParams)
+    {
+        if([params objectForKey:@"Param5"])
+        {
+            numTransactionState = (NSNumber *) [params objectForKey:@"Param5"];
+            transactionState = [numTransactionState intValue];
+        }
+        
+        if([params objectForKey:@"Param6"])
+        {
+            strReceipt = (NSString *) [params objectForKey:@"Param6"];
+            receipt = [strReceipt dataUsingEncoding:NSUTF8StringEncoding];
+        }
+        
+        // ignore @"Param7" used for receiptSignature in Android
+    }
+    
+    NSArray *eventItems = nil;
+    if(4 <= countFixedParams)
+    {
+        eventItems = [self convertToMATEventItems:params countOfFixedParams:countFixedParams];
+    }
+    
+    if(7 == countFixedParams)
+    {
+        [MobileAppTracker measureActionWithEventId:eventId eventItems:eventItems referenceId:refId revenueAmount:revenue currencyCode:currencyCode transactionState:transactionState receipt:receipt];
+    }
+    else
+    {
+        [MobileAppTracker measureActionWithEventId:eventId eventItems:eventItems referenceId:refId revenueAmount:revenue currencyCode:currencyCode];
+    }
+}
+
 #pragma mark - MAT Debugging methods
 
 - (void)setDebugMode:(NSNumber *)yesorno
@@ -429,6 +540,13 @@ MATSDKDelegate *matDelegate = nil;
     BOOL enable = [yesorno boolValue];
     
     [MobileAppTracker setAppAdTracking:enable];
+}
+
+- (void)setUseCookieTracking:(NSNumber *)yesorno
+{
+    BOOL enable = [yesorno boolValue];
+    
+    [MobileAppTracker setUseCookieTracking:enable];
 }
 
 - (void)setRedirectUrl:(NSString *)redirectUrl

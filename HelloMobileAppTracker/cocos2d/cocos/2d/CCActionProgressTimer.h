@@ -26,7 +26,7 @@ THE SOFTWARE.
 #ifndef __ACTION_CCPROGRESS_TIMER_H__
 #define __ACTION_CCPROGRESS_TIMER_H__
 
-#include "CCActionInterval.h"
+#include "2d/CCActionInterval.h"
 
 NS_CC_BEGIN
 
@@ -49,16 +49,18 @@ public:
     // Overrides
     //
 	virtual ProgressTo* clone() const override;
-	virtual ProgressTo* reverse(void) const override;
+	virtual ProgressTo* reverse() const override;
     virtual void startWithTarget(Node *target) override;
     virtual void update(float time) override;
-
-protected:
+    
+CC_CONSTRUCTOR_ACCESS:
     ProgressTo() {}
     virtual ~ProgressTo() {}
+
     /** Initializes with a duration and a percent */
     bool initWithDuration(float duration, float percent);
 
+protected:
     float _to;
     float _from;
 
@@ -80,16 +82,18 @@ public:
     // Overrides
     //
 	virtual ProgressFromTo* clone() const override;
-	virtual ProgressFromTo* reverse(void) const override;
+	virtual ProgressFromTo* reverse() const override;
     virtual void startWithTarget(Node *target) override;
     virtual void update(float time) override;
-
-protected:
+    
+CC_CONSTRUCTOR_ACCESS:
     ProgressFromTo() {}
     virtual ~ProgressFromTo() {}
+
     /** Initializes the action with a duration, a "from" percentage and a "to" percentage */
     bool initWithDuration(float duration, float fromPercentage, float toPercentage);
 
+protected:
     float _to;
     float _from;
 

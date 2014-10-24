@@ -30,6 +30,9 @@ THE SOFTWARE.
 #include "cocostudio/CCArmature.h"
 #include "cocostudio/DictionaryHelper.h"
 
+#include "json/document.h"
+#include "DictionaryHelper.h"
+
 #include <string>
 #include <queue>
 #include <list>
@@ -43,19 +46,21 @@ namespace tinyxml2
 }
 
 namespace cocostudio {
-
+    class CocoLoader;
+    struct stExpCocoNode;
 /**
  *  @js NA
  *  @lua NA
  */
-class  DataReaderHelper : cocos2d::Object
+class  DataReaderHelper : cocos2d::Ref
 {
 protected:
 
 	enum ConfigType
 	{
 		DragonBone_XML,
-		CocoStudio_JSON
+		CocoStudio_JSON,
+        CocoStudio_Binary
 	};
 
 	typedef struct _AsyncStruct
@@ -64,7 +69,7 @@ protected:
 		std::string    fileContent;
 		ConfigType     configType;
 		std::string    baseFilePath;
-		cocos2d::Object       *target;
+		cocos2d::Ref       *target;
 		cocos2d::SEL_SCHEDULE   selector;
 		bool           autoLoadSpriteFile;
 
@@ -110,7 +115,7 @@ public:
     ~DataReaderHelper();
 
     void addDataFromFile(const std::string& filePath);
-    void addDataFromFileAsync(const std::string& imagePath, const std::string& plistPath, const std::string& filePath, cocos2d::Object *target, cocos2d::SEL_SCHEDULE selector);
+    void addDataFromFileAsync(const std::string& imagePath, const std::string& plistPath, const std::string& filePath, cocos2d::Ref *target, cocos2d::SEL_SCHEDULE selector);
 
     void addDataAsyncCallBack(float dt);
 
@@ -171,7 +176,24 @@ public:
     static ContourData *decodeContour(const rapidjson::Value& json);
 
     static void decodeNode(BaseData *node, const rapidjson::Value& json, DataInfo *dataInfo);
-
+    
+// for binary decode
+public:
+	static void addDataFromBinaryCache(const char *fileContent, DataInfo *dataInfo = nullptr);
+	static ArmatureData *decodeArmature(CocoLoader *cocoLoader, stExpCocoNode *pCocoNode, DataInfo *dataInfo);
+	static BoneData *decodeBone(CocoLoader *cocoLoader, stExpCocoNode *pCocoNode, DataInfo *dataInfo);
+	static DisplayData *decodeBoneDisplay(CocoLoader *cocoLoader, stExpCocoNode *pCocoNode, DataInfo *dataInfo);
+	static AnimationData *decodeAnimation(CocoLoader *cocoLoader, stExpCocoNode *pCocoNode, DataInfo *dataInfo);
+	static MovementData *decodeMovement(CocoLoader *cocoLoader, stExpCocoNode *pCocoNode, DataInfo *dataInfo);
+    
+	static MovementBoneData *decodeMovementBone(CocoLoader *cocoLoader, stExpCocoNode *pCocoNode, DataInfo *dataInfo);
+	static FrameData *decodeFrame(CocoLoader *cocoLoader, stExpCocoNode *pCocoNode, DataInfo *dataInfo);
+    
+	static TextureData *decodeTexture(CocoLoader *cocoLoader, stExpCocoNode *pCocoNode);
+	static ContourData *decodeContour(CocoLoader *cocoLoader, stExpCocoNode *pCocoNode);
+    
+	static void decodeNode(BaseData *node, CocoLoader *cocoLoader, stExpCocoNode *pCocoNode, DataInfo *dataInfo);
+    
 protected:
 	void loadData();
 

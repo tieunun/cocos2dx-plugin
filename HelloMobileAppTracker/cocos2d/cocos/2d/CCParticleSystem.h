@@ -27,10 +27,10 @@ THE SOFTWARE.
 #ifndef __CCPARTICLE_SYSTEM_H__
 #define __CCPARTICLE_SYSTEM_H__
 
-#include "CCProtocols.h"
-#include "CCNode.h"
-#include "CCValue.h"
-#include "CCString.h"
+#include "base/CCProtocols.h"
+#include "2d/CCNode.h"
+#include "base/CCValue.h"
+#include "deprecated/CCString.h"
 
 NS_CC_BEGIN
 
@@ -45,8 +45,8 @@ class ParticleBatchNode;
 Structure that contains the values of each particle
 */
 typedef struct sParticle {
-    Point     pos;
-    Point     startPos;
+    Vec2     pos;
+    Vec2     startPos;
 
     Color4F    color;
     Color4F    deltaColor;
@@ -63,7 +63,7 @@ typedef struct sParticle {
 
     //! Mode A: gravity, direction, radial accel, tangential accel
     struct {
-        Point        dir;
+        Vec2        dir;
         float        radialAccel;
         float        tangentialAccel;
     } modeA;
@@ -78,7 +78,7 @@ typedef struct sParticle {
 
 }tParticle;
 
-//typedef void (*CC_UPDATE_PARTICLE_IMP)(id, SEL, tParticle*, Point);
+//typedef void (*CC_UPDATE_PARTICLE_IMP)(id, SEL, tParticle*, Vec2);
 
 class Texture2D;
 
@@ -125,6 +125,13 @@ emitter.startSpin = 0;
 @endcode
 
 */
+
+#if (CC_TARGET_PLATFORM == CC_PLATFORM_WP8) || (CC_TARGET_PLATFORM == CC_PLATFORM_WINRT)
+#ifdef RELATIVE
+#undef RELATIVE
+#endif
+#endif
+
 class CC_DLL ParticleSystem : public Node, public TextureProtocol
 {
 public:
@@ -185,7 +192,7 @@ public:
     bool isFull();
 
     //! should be overridden by subclasses
-    virtual void updateQuadWithParticle(tParticle* particle, const Point& newPosition);
+    virtual void updateQuadWithParticle(tParticle* particle, const Vec2& newPosition);
     //! should be overridden by subclasses
     virtual void postStep();
 
@@ -195,8 +202,8 @@ public:
     virtual void setAutoRemoveOnFinish(bool var);
 
     // mode A
-    virtual const Point& getGravity();
-    virtual void setGravity(const Point& g);
+    virtual const Vec2& getGravity();
+    virtual void setGravity(const Vec2& g);
     virtual float getSpeed() const;
     virtual void setSpeed(float speed);
     virtual float getSpeedVar() const;
@@ -249,12 +256,12 @@ public:
     inline void setDuration(float duration) { _duration = duration; };
     
     /** sourcePosition of the emitter */
-    inline const Point& getSourcePosition() const { return _sourcePosition; };
-    inline void setSourcePosition(const Point& pos) { _sourcePosition = pos; };
+    inline const Vec2& getSourcePosition() const { return _sourcePosition; };
+    inline void setSourcePosition(const Vec2& pos) { _sourcePosition = pos; };
     
     /** Position variance of the emitter */
-    inline const Point& getPosVar() const { return _posVar; };
-    inline void setPosVar(const Point& pos) { _posVar = pos; };
+    inline const Vec2& getPosVar() const { return _posVar; };
+    inline void setPosVar(const Vec2& pos) { _posVar = pos; };
 
     /** life, and life variation of each particle */
     inline float getLife() const { return _life; };
@@ -347,6 +354,8 @@ public:
     inline void setPositionType(PositionType type) { _positionType = type; };
     
     // Overrides
+    virtual void onEnter() override;
+    virtual void onExit() override;
     virtual void update(float dt) override;
     virtual Texture2D* getTexture() const override;
     virtual void setTexture(Texture2D *texture) override;
@@ -363,8 +372,8 @@ public:
     * @lua NA
     */
     virtual const BlendFunc &getBlendFunc() const override;
-
-protected:
+    
+CC_CONSTRUCTOR_ACCESS:
     /**
      * @js ctor
      */
@@ -383,20 +392,21 @@ protected:
      @since v0.99.3
      */
     bool initWithFile(const std::string& plistFile);
-
+    
     /** initializes a QuadParticleSystem from a Dictionary.
      @since v0.99.3
      */
     bool initWithDictionary(ValueMap& dictionary);
-
+    
     /** initializes a particle system from a NSDictionary and the path from where to load the png
      @since v2.1
      */
     bool initWithDictionary(ValueMap& dictionary, const std::string& dirname);
-
+    
     //! Initializes a system with a fixed number of particles
     virtual bool initWithTotalParticles(int numberOfParticles);
 
+protected:
     virtual void updateBlendFunc();
 
     /** whether or not the particles are using blend additive.
@@ -422,7 +432,7 @@ protected:
     //! Mode A:Gravity + Tangential Accel + Radial Accel
     struct {
         /** Gravity value. Only available in 'Gravity' mode. */
-        Point gravity;
+        Vec2 gravity;
         /** speed of each particle. Only available in 'Gravity' mode.  */
         float speed;
         /** speed variance of each particle. Only available in 'Gravity' mode. */
@@ -493,9 +503,9 @@ protected:
     /** How many seconds the emitter will run. -1 means 'forever' */
     float _duration;
     /** sourcePosition of the emitter */
-    Point _sourcePosition;
+    Vec2 _sourcePosition;
     /** Position variance of the emitter */
-    Point _posVar;
+    Vec2 _posVar;
     /** life, and life variation of each particle */
     float _life;
     /** life variance of each particle */

@@ -22,17 +22,17 @@
  THE SOFTWARE.
  ****************************************************************************/
 
-#include "CCPhysicsWorld.h"
+#include "physics/CCPhysicsWorld.h"
 #if CC_USE_PHYSICS
 
 #include <climits>
 
 #include "chipmunk.h"
 
-#include "CCPhysicsBody.h"
-#include "CCPhysicsShape.h"
+#include "physics/CCPhysicsBody.h"
+#include "physics/CCPhysicsShape.h"
 #include "CCPhysicsContact.h"
-#include "CCPhysicsJoint.h"
+#include "physics/CCPhysicsJoint.h"
 #include "CCPhysicsContact.h"
 
 #include "chipmunk/CCPhysicsWorldInfo_chipmunk.h"
@@ -42,12 +42,11 @@
 #include "chipmunk/CCPhysicsJointInfo_chipmunk.h"
 #include "chipmunk/CCPhysicsHelper_chipmunk.h"
 
-#include "CCDrawNode.h"
-#include "CCArray.h"
-#include "CCScene.h"
-#include "CCDirector.h"
-#include "CCEventDispatcher.h"
-#include "CCEventCustom.h"
+#include "2d/CCDrawNode.h"
+#include "2d/CCScene.h"
+#include "base/CCDirector.h"
+#include "base/CCEventDispatcher.h"
+#include "base/CCEventCustom.h"
 
 #include <algorithm>
 
@@ -67,8 +66,8 @@ namespace
     {
         PhysicsWorld* world;
         PhysicsRayCastCallbackFunc func;
-        Point p1;
-        Point p2;
+        Vec2 p1;
+        Vec2 p2;
         void* data;
     }RayCastCallbackInfo;
     
@@ -154,8 +153,8 @@ void PhysicsWorldCallback::rayCastCallbackFunc(cpShape *shape, cpFloat t, cpVect
         it->second->getShape(),
         info->p1,
         info->p2,
-        Point(info->p1.x+(info->p2.x-info->p1.x)*t, info->p1.y+(info->p2.y-info->p1.y)*t),
-        Point(n.x, n.y),
+        Vec2(info->p1.x+(info->p2.x-info->p1.x)*t, info->p1.y+(info->p2.y-info->p1.y)*t),
+        Vec2(n.x, n.y),
         (float)t,
     };
     
@@ -207,9 +206,14 @@ void PhysicsWorld::debugDraw()
         {
             if (_debugDrawMask & DEBUGDRAW_SHAPE)
             {
-                for (Object* obj : _bodies)
+                for (Ref* obj : _bodies)
                 {
                     PhysicsBody* body = dynamic_cast<PhysicsBody*>(obj);
+                    
+                    if (!body->isEnabled())
+                    {
+                        continue;
+                    }
                     
                     for (auto& shape : body->getShapes())
                     {
@@ -263,7 +267,7 @@ int PhysicsWorld::collisionBeginCallback(PhysicsContact& contact)
     
     // bitmask check
     if ((shapeA->getCategoryBitmask() & shapeB->getContactTestBitmask()) == 0
-        || (shapeB->getContactTestBitmask() & shapeA->getCategoryBitmask()) == 0)
+        || (shapeA->getContactTestBitmask() & shapeB->getCategoryBitmask()) == 0)
     {
         contact.setNotificationEnable(false);
     }
@@ -281,11 +285,12 @@ int PhysicsWorld::collisionBeginCallback(PhysicsContact& contact)
         }
     }
     
-    contact.setEventCode(PhysicsContact::EventCode::BEGIN);
-    contact.setWorld(this);
-    EventCustom event(PHYSICSCONTACT_EVENT_NAME);
-    event.setUserData(&contact);
-    _scene->getEventDispatcher()->dispatchEvent(&event);
+    if (contact.isNotificationEnabled())
+    {
+        contact.setEventCode(PhysicsContact::EventCode::BEGIN);
+        contact.setWorld(this);
+        _scene->getEventDispatcher()->dispatchEvent(&contact);
+    }
     
     return ret ? contact.resetResult() : false;
 }
@@ -300,9 +305,7 @@ int PhysicsWorld::collisionPreSolveCallback(PhysicsContact& contact)
     
     contact.setEventCode(PhysicsContact::EventCode::PRESOLVE);
     contact.setWorld(this);
-    EventCustom event(PHYSICSCONTACT_EVENT_NAME);
-    event.setUserData(&contact);
-    _scene->getEventDispatcher()->dispatchEvent(&event);
+    _scene->getEventDispatcher()->dispatchEvent(&contact);
     
     return contact.resetResult();
 }
@@ -316,9 +319,7 @@ void PhysicsWorld::collisionPostSolveCallback(PhysicsContact& contact)
     
     contact.setEventCode(PhysicsContact::EventCode::POSTSOLVE);
     contact.setWorld(this);
-    EventCustom event(PHYSICSCONTACT_EVENT_NAME);
-    event.setUserData(&contact);
-    _scene->getEventDispatcher()->dispatchEvent(&event);
+    _scene->getEventDispatcher()->dispatchEvent(&contact);
 }
 
 void PhysicsWorld::collisionSeparateCallback(PhysicsContact& contact)
@@ -330,12 +331,10 @@ void PhysicsWorld::collisionSeparateCallback(PhysicsContact& contact)
     
     contact.setEventCode(PhysicsContact::EventCode::SEPERATE);
     contact.setWorld(this);
-    EventCustom event(PHYSICSCONTACT_EVENT_NAME);
-    event.setUserData(&contact);
-    _scene->getEventDispatcher()->dispatchEvent(&event);
+    _scene->getEventDispatcher()->dispatchEvent(&contact);
 }
 
-void PhysicsWorld::rayCast(PhysicsRayCastCallbackFunc func, const Point& point1, const Point& point2, void* data)
+void PhysicsWorld::rayCast(PhysicsRayCastCallbackFunc func, const Vec2& point1, const Vec2& point2, void* data)
 {
     CCASSERT(func != nullptr, "func shouldn't be nullptr");
     
@@ -353,7 +352,6 @@ void PhysicsWorld::rayCast(PhysicsRayCastCallbackFunc func, const Point& point1,
                             &info);
     }
 }
-
 
 void PhysicsWorld::queryRect(PhysicsQueryRectCallbackFunc func, const Rect& rect, void* data)
 {
@@ -373,7 +371,7 @@ void PhysicsWorld::queryRect(PhysicsQueryRectCallbackFunc func, const Rect& rect
     }
 }
 
-void PhysicsWorld::queryPoint(PhysicsQueryPointCallbackFunc func, const Point& point, void* data)
+void PhysicsWorld::queryPoint(PhysicsQueryPointCallbackFunc func, const Vec2& point, void* data)
 {
     CCASSERT(func != nullptr, "func shouldn't be nullptr");
     
@@ -392,7 +390,7 @@ void PhysicsWorld::queryPoint(PhysicsQueryPointCallbackFunc func, const Point& p
     }
 }
 
-Vector<PhysicsShape*> PhysicsWorld::getShapes(const Point& point) const
+Vector<PhysicsShape*> PhysicsWorld::getShapes(const Vec2& point) const
 {
     Vector<PhysicsShape*> arr;
     cpSpaceNearestPointQuery(this->_info->getSpace(),
@@ -406,7 +404,7 @@ Vector<PhysicsShape*> PhysicsWorld::getShapes(const Point& point) const
     return arr;
 }
 
-PhysicsShape* PhysicsWorld::getShape(const Point& point) const
+PhysicsShape* PhysicsWorld::getShape(const Vec2& point) const
 {
     cpShape* shape = cpSpaceNearestPointQueryNearest(this->_info->getSpace(),
                                     PhysicsHelper::point2cpv(point),
@@ -416,134 +414,6 @@ PhysicsShape* PhysicsWorld::getShape(const Point& point) const
                                     nullptr);
     
     return shape == nullptr ? nullptr : PhysicsShapeInfo::getMap().find(shape)->second->getShape();
-}
-
-void PhysicsDebugDraw::drawShape(PhysicsShape& shape)
-{
-    for (auto it = shape._info->getShapes().begin(); it != shape._info->getShapes().end(); ++it)
-    {
-        cpShape *subShape = *it;
-        
-        switch ((*it)->klass_private->type)
-        {
-            case CP_CIRCLE_SHAPE:
-            {
-                float radius = PhysicsHelper::cpfloat2float(cpCircleShapeGetRadius(subShape));
-                Point centre = PhysicsHelper::cpv2point(cpBodyGetPos(cpShapeGetBody(subShape)))
-                + PhysicsHelper::cpv2point(cpCircleShapeGetOffset(subShape));
-                
-                static const int CIRCLE_SEG_NUM = 12;
-                Point seg[CIRCLE_SEG_NUM] = {};
-                
-                for (int i = 0; i < CIRCLE_SEG_NUM; ++i)
-                {
-                    float angle = (float)i * M_PI / (float)CIRCLE_SEG_NUM * 2.0f;
-                    Point d(radius * cosf(angle), radius * sinf(angle));
-                    seg[i] = centre + d;
-                }
-                _drawNode->drawPolygon(seg, CIRCLE_SEG_NUM, Color4F(1.0f, 0.0f, 0.0f, 0.3f), 1, Color4F(1, 0, 0, 1));
-                break;
-            }
-            case CP_SEGMENT_SHAPE:
-            {
-                cpSegmentShape *seg = (cpSegmentShape *)subShape;
-                _drawNode->drawSegment(PhysicsHelper::cpv2point(seg->ta),
-                                       PhysicsHelper::cpv2point(seg->tb),
-                                       PhysicsHelper::cpfloat2float(seg->r==0 ? 1 : seg->r), Color4F(1, 0, 0, 1));
-                break;
-            }
-            case CP_POLY_SHAPE:
-            {
-                cpPolyShape* poly = (cpPolyShape*)subShape;
-                int num = poly->numVerts;
-                Point* seg = new Point[num];
-                
-                PhysicsHelper::cpvs2points(poly->tVerts, seg, num);
-                
-                _drawNode->drawPolygon(seg, num, Color4F(1.0f, 0.0f, 0.0f, 0.3f), 1.0f, Color4F(1.0f, 0.0f, 0.0f, 1.0f));
-                
-                delete[] seg;
-                break;
-            }
-            default:
-                break;
-        }
-    }
-}
-
-void PhysicsDebugDraw::drawJoint(PhysicsJoint& joint)
-{
-    for (auto it = joint._info->getJoints().begin(); it != joint._info->getJoints().end(); ++it)
-    {
-        cpConstraint *constraint = *it;
-        
-        
-        cpBody *body_a = constraint->a;
-        cpBody *body_b = constraint->b;
-        
-        const cpConstraintClass *klass = constraint->klass_private;
-        if(klass == cpPinJointGetClass())
-        {
-            cpPinJoint *subJoint = (cpPinJoint *)constraint;
-            
-            cpVect a = cpvadd(body_a->p, cpvrotate(subJoint->anchr1, body_a->rot));
-            cpVect b = cpvadd(body_b->p, cpvrotate(subJoint->anchr2, body_b->rot));
-            
-            _drawNode->drawSegment(PhysicsHelper::cpv2point(a), PhysicsHelper::cpv2point(b), 1, Color4F(0.0f, 0.0f, 1.0f, 1.0f));
-            _drawNode->drawDot(PhysicsHelper::cpv2point(a), 2, Color4F(0.0f, 1.0f, 0.0f, 1.0f));
-            _drawNode->drawDot(PhysicsHelper::cpv2point(b), 2, Color4F(0.0f, 1.0f, 0.0f, 1.0f));
-        }
-        else if(klass == cpSlideJointGetClass())
-        {
-            cpSlideJoint *subJoint = (cpSlideJoint *)constraint;
-            
-            cpVect a = cpvadd(body_a->p, cpvrotate(subJoint->anchr1, body_a->rot));
-            cpVect b = cpvadd(body_b->p, cpvrotate(subJoint->anchr2, body_b->rot));
-            
-            _drawNode->drawSegment(PhysicsHelper::cpv2point(a), PhysicsHelper::cpv2point(b), 1, Color4F(0.0f, 0.0f, 1.0f, 1.0f));
-            _drawNode->drawDot(PhysicsHelper::cpv2point(a), 2, Color4F(0.0f, 1.0f, 0.0f, 1.0f));
-            _drawNode->drawDot(PhysicsHelper::cpv2point(b), 2, Color4F(0.0f, 1.0f, 0.0f, 1.0f));
-        }
-        else if(klass == cpPivotJointGetClass())
-        {
-            cpPivotJoint *subJoint = (cpPivotJoint *)constraint;
-            
-            cpVect a = cpvadd(body_a->p, cpvrotate(subJoint->anchr1, body_a->rot));
-            cpVect b = cpvadd(body_b->p, cpvrotate(subJoint->anchr2, body_b->rot));
-            
-            _drawNode->drawDot(PhysicsHelper::cpv2point(a), 2, Color4F(0.0f, 1.0f, 0.0f, 1.0f));
-            _drawNode->drawDot(PhysicsHelper::cpv2point(b), 2, Color4F(0.0f, 1.0f, 0.0f, 1.0f));
-        }
-        else if(klass == cpGrooveJointGetClass())
-        {
-            cpGrooveJoint *subJoint = (cpGrooveJoint *)constraint;
-            
-            cpVect a = cpvadd(body_a->p, cpvrotate(subJoint->grv_a, body_a->rot));
-            cpVect b = cpvadd(body_a->p, cpvrotate(subJoint->grv_b, body_a->rot));
-            cpVect c = cpvadd(body_b->p, cpvrotate(subJoint->anchr2, body_b->rot));
-            
-            _drawNode->drawSegment(PhysicsHelper::cpv2point(a), PhysicsHelper::cpv2point(b), 1, Color4F(0.0f, 0.0f, 1.0f, 1.0f));
-            _drawNode->drawDot(PhysicsHelper::cpv2point(c), 2, Color4F(0.0f, 1.0f, 0.0f, 1.0f));
-        }
-        else if(klass == cpDampedSpringGetClass())
-        {
-            cpDampedSpring *subJoint = (cpDampedSpring *)constraint;
-            
-            cpVect a = cpvadd(body_a->p, cpvrotate(subJoint->anchr1, body_a->rot));
-            cpVect b = cpvadd(body_b->p, cpvrotate(subJoint->anchr2, body_b->rot));
-            
-            _drawNode->drawSegment(PhysicsHelper::cpv2point(a), PhysicsHelper::cpv2point(b), 1, Color4F(0.0f, 0.0f, 1.0f, 1.0f));
-            _drawNode->drawDot(PhysicsHelper::cpv2point(a), 2, Color4F(0.0f, 1.0f, 0.0f, 1.0f));
-            _drawNode->drawDot(PhysicsHelper::cpv2point(b), 2, Color4F(0.0f, 1.0f, 0.0f, 1.0f));
-            
-            
-        }
-    }
-}
-
-void PhysicsDebugDraw::drawContact()
-{
-    
 }
 
 PhysicsWorld* PhysicsWorld::construct(Scene& scene)
@@ -608,7 +478,7 @@ void PhysicsWorld::doAddBody(PhysicsBody* body)
         //is gravity enable
         if (!body->isGravityEnabled())
         {
-            body->applyForce(-_gravity);
+            body->applyForce(-_gravity * body->getMass());
         }
         
         // add body to space
@@ -656,18 +526,20 @@ void PhysicsWorld::updateBodies()
         return;
     }
     
-    for (auto& body : _delayAddBodies)
+    // issue #4944, contact callback will be invoked when add/remove body, _delayAddBodies maybe changed, so we need make a copy.
+    auto addCopy = _delayAddBodies;
+    _delayAddBodies.clear();
+    for (auto& body : addCopy)
     {
         doAddBody(body);
     }
     
-    for (auto& body : _delayRemoveBodies)
+    auto removeCopy = _delayRemoveBodies;
+    _delayRemoveBodies.clear();
+    for (auto& body : removeCopy)
     {
         doRemoveBody(body);
     }
-    
-    _delayAddBodies.clear();
-    _delayRemoveBodies.clear();
 }
 
 void PhysicsWorld::removeBody(int tag)
@@ -697,11 +569,11 @@ void PhysicsWorld::removeBody(PhysicsBody* body)
         // set destroy param to false to keep the iterator available
         removeJoint(joint, false);
         
-        PhysicsBody* other = (joint->getBodyA() == body ? joint->getBodyB() : body);
+        PhysicsBody* other = (joint->getBodyA() == body ? joint->getBodyB() : joint->getBodyA());
         other->removeJoint(joint);
         
         // test the distraction is delaied or not
-        if (_delayRemoveJoints.size() > 0 && _delayRemoveJoints.back() == joint)
+        if (std::find(_delayRemoveJoints.rbegin(), _delayRemoveJoints.rend(), joint) != _delayRemoveJoints.rend())
         {
             joint->_destoryMark = true;
         }
@@ -780,7 +652,7 @@ void PhysicsWorld::removeJoint(PhysicsJoint* joint, bool destroy)
         }
         
         // test the distraction is delaied or not
-        if (_delayRemoveJoints.size() > 0 && _delayRemoveJoints.back() == joint)
+        if (std::find(_delayRemoveJoints.rbegin(), _delayRemoveJoints.rend(), joint) != _delayRemoveJoints.rend())
         {
             joint->_destoryMark = true;
         }
@@ -798,12 +670,16 @@ void PhysicsWorld::updateJoints()
         return;
     }
     
-    for (auto joint : _delayAddJoints)
+    auto addCopy = _delayAddJoints;
+    _delayAddJoints.clear();
+    for (auto joint : addCopy)
     {
         doAddJoint(joint);
     }
     
-    for (auto joint : _delayRemoveJoints)
+    auto removeCopy = _delayRemoveJoints;
+    _delayRemoveJoints.clear();
+    for (auto joint : removeCopy)
     {
         doRemoveJoint(joint);
         
@@ -812,9 +688,6 @@ void PhysicsWorld::updateJoints()
             delete joint;
         }
     }
-    
-    _delayAddJoints.clear();
-    _delayRemoveJoints.clear();
 }
 
 void PhysicsWorld::removeShape(PhysicsShape* shape)
@@ -858,7 +731,7 @@ void PhysicsWorld::removeJointOrDelay(PhysicsJoint* joint)
     
     if (_info->isLocked())
     {
-        if (std::find(_delayRemoveJoints.begin(), _delayRemoveJoints.end(), joint) == _delayRemoveJoints.end())
+        if (std::find(_delayRemoveJoints.rbegin(), _delayRemoveJoints.rend(), joint) == _delayRemoveJoints.rend())
         {
             _delayRemoveJoints.push_back(joint);
             _delayDirty = true;
@@ -902,7 +775,7 @@ void PhysicsWorld::removeAllJoints(bool destroy)
             }
             
             // test the distraction is delaied or not
-            if (_delayRemoveJoints.size() > 0 && _delayRemoveJoints.back() == joint)
+            if (std::find(_delayRemoveJoints.rbegin(), _delayRemoveJoints.rend(), joint) != _delayRemoveJoints.rend())
             {
                 joint->_destoryMark = true;
             }
@@ -931,7 +804,7 @@ void PhysicsWorld::doRemoveBody(PhysicsBody* body)
     // reset the gravity
     if (!body->isGravityEnabled())
     {
-        body->applyForce(-_gravity);
+        body->applyForce(_gravity * body->getMass());
     }
     
     // remove shaps
@@ -997,8 +870,7 @@ void PhysicsWorld::setGravity(const Vect& gravity)
             // reset gravity for body
             if (!body->isGravityEnabled())
             {
-                body->applyForce(-_gravity);
-                body->applyForce(gravity);
+                body->applyForce((_gravity - gravity) * body->getMass());
             }
         }
     }
@@ -1009,7 +881,7 @@ void PhysicsWorld::setGravity(const Vect& gravity)
 
 void PhysicsWorld::update(float delta)
 {
-    if (_delayDirty)
+    while (_delayDirty)
     {
         // the updateJoints must run before the updateBodies.
         updateJoints();
@@ -1017,15 +889,14 @@ void PhysicsWorld::update(float delta)
         _delayDirty = !(_delayAddBodies.size() == 0 && _delayRemoveBodies.size() == 0 && _delayAddJoints.size() == 0 && _delayRemoveJoints.size() == 0);
     }
     
-    for (auto& body : _bodies)
-    {
-        body->update(delta);
-    }
-    
     _updateTime += delta;
     if (++_updateRateCount >= _updateRate)
     {
         _info->step(_updateTime * _speed);
+        for (auto& body : _bodies)
+        {
+            body->update(_updateTime * _speed);
+        }
         _updateRateCount = 0;
         _updateTime = 0.0f;
     }
@@ -1037,7 +908,7 @@ void PhysicsWorld::update(float delta)
 }
 
 PhysicsWorld::PhysicsWorld()
-: _gravity(Point(0.0f, -98.0f))
+: _gravity(Vec2(0.0f, -98.0f))
 , _speed(1.0f)
 , _updateRate(1)
 , _updateRateCount(0)
@@ -1063,39 +934,156 @@ PhysicsDebugDraw::PhysicsDebugDraw(PhysicsWorld& world)
 : _drawNode(nullptr)
 , _world(world)
 {
+    _drawNode = DrawNode::create();
+    _world.getScene().addChild(_drawNode);
 }
 
 PhysicsDebugDraw::~PhysicsDebugDraw()
 {
-    if (_drawNode != nullptr)
-    {
-        _drawNode->removeFromParent();
-        _drawNode = nullptr;
-    }
+    _drawNode->removeFromParent();
+    _drawNode = nullptr;
 }
 
 bool PhysicsDebugDraw::begin()
 {
-    if (_drawNode != nullptr)
-    {
-        _drawNode->removeFromParent();
-        _drawNode = nullptr;
-    }
-    
-    _drawNode = DrawNode::create();
-    
-    if (_drawNode == nullptr)
-    {
-        return false;
-    }
-    
-    _world.getScene().addChild(_drawNode);
-    
+    _drawNode->clear();
     return true;
 }
 
 void PhysicsDebugDraw::end()
 {
+}
+
+void PhysicsDebugDraw::drawShape(PhysicsShape& shape)
+{
+    const Color4F fillColor(1.0f, 0.0f, 0.0f, 0.3f);
+    const Color4F outlineColor(1.0f, 0.0f, 0.0f, 1.0f);
+    
+    for (auto it = shape._info->getShapes().begin(); it != shape._info->getShapes().end(); ++it)
+    {
+        cpShape *subShape = *it;
+        
+        switch ((*it)->klass_private->type)
+        {
+            case CP_CIRCLE_SHAPE:
+            {
+                float radius = PhysicsHelper::cpfloat2float(cpCircleShapeGetRadius(subShape));
+                Vec2 centre = PhysicsHelper::cpv2point(cpBodyGetPos(cpShapeGetBody(subShape)))
+                + PhysicsHelper::cpv2point(cpCircleShapeGetOffset(subShape));
+                
+                static const int CIRCLE_SEG_NUM = 12;
+                Vec2 seg[CIRCLE_SEG_NUM] = {};
+                
+                for (int i = 0; i < CIRCLE_SEG_NUM; ++i)
+                {
+                    float angle = (float)i * M_PI / (float)CIRCLE_SEG_NUM * 2.0f;
+                    Vec2 d(radius * cosf(angle), radius * sinf(angle));
+                    seg[i] = centre + d;
+                }
+                _drawNode->drawPolygon(seg, CIRCLE_SEG_NUM, fillColor, 1, outlineColor);
+                break;
+            }
+            case CP_SEGMENT_SHAPE:
+            {
+                cpSegmentShape *seg = (cpSegmentShape *)subShape;
+                _drawNode->drawSegment(PhysicsHelper::cpv2point(seg->ta),
+                                      PhysicsHelper::cpv2point(seg->tb),
+                                      PhysicsHelper::cpfloat2float(seg->r==0 ? 1 : seg->r), outlineColor);
+                break;
+            }
+            case CP_POLY_SHAPE:
+            {
+                cpPolyShape* poly = (cpPolyShape*)subShape;
+                int num = poly->numVerts;
+                Vec2* seg = new Vec2[num];
+                
+                PhysicsHelper::cpvs2points(poly->tVerts, seg, num);
+                
+                _drawNode->drawPolygon(seg, num, fillColor, 1.0f, outlineColor);
+                
+                delete[] seg;
+                break;
+            }
+            default:
+                break;
+        }
+    }
+}
+
+void PhysicsDebugDraw::drawJoint(PhysicsJoint& joint)
+{
+    const Color4F lineColor(0.0f, 0.0f, 1.0f, 1.0f);
+    const Color4F jointPointColor(0.0f, 1.0f, 0.0f, 1.0f);
+    
+    for (auto it = joint._info->getJoints().begin(); it != joint._info->getJoints().end(); ++it)
+    {
+        cpConstraint *constraint = *it;
+        
+        
+        cpBody *body_a = constraint->a;
+        cpBody *body_b = constraint->b;
+        
+        const cpConstraintClass *klass = constraint->klass_private;
+        if(klass == cpPinJointGetClass())
+        {
+            cpPinJoint *subJoint = (cpPinJoint *)constraint;
+            
+            cpVect a = cpvadd(body_a->p, cpvrotate(subJoint->anchr1, body_a->rot));
+            cpVect b = cpvadd(body_b->p, cpvrotate(subJoint->anchr2, body_b->rot));
+            
+            _drawNode->drawSegment(PhysicsHelper::cpv2point(a), PhysicsHelper::cpv2point(b), 1, lineColor);
+            _drawNode->drawDot(PhysicsHelper::cpv2point(a), 2, jointPointColor);
+            _drawNode->drawDot(PhysicsHelper::cpv2point(b), 2, jointPointColor);
+        }
+        else if(klass == cpSlideJointGetClass())
+        {
+            cpSlideJoint *subJoint = (cpSlideJoint *)constraint;
+            
+            cpVect a = cpvadd(body_a->p, cpvrotate(subJoint->anchr1, body_a->rot));
+            cpVect b = cpvadd(body_b->p, cpvrotate(subJoint->anchr2, body_b->rot));
+            
+            _drawNode->drawSegment(PhysicsHelper::cpv2point(a), PhysicsHelper::cpv2point(b), 1, lineColor);
+            _drawNode->drawDot(PhysicsHelper::cpv2point(a), 2, jointPointColor);
+            _drawNode->drawDot(PhysicsHelper::cpv2point(b), 2, jointPointColor);
+        }
+        else if(klass == cpPivotJointGetClass())
+        {
+            cpPivotJoint *subJoint = (cpPivotJoint *)constraint;
+            
+            cpVect a = cpvadd(body_a->p, cpvrotate(subJoint->anchr1, body_a->rot));
+            cpVect b = cpvadd(body_b->p, cpvrotate(subJoint->anchr2, body_b->rot));
+            
+            _drawNode->drawDot(PhysicsHelper::cpv2point(a), 2, jointPointColor);
+            _drawNode->drawDot(PhysicsHelper::cpv2point(b), 2, jointPointColor);
+        }
+        else if(klass == cpGrooveJointGetClass())
+        {
+            cpGrooveJoint *subJoint = (cpGrooveJoint *)constraint;
+            
+            cpVect a = cpvadd(body_a->p, cpvrotate(subJoint->grv_a, body_a->rot));
+            cpVect b = cpvadd(body_a->p, cpvrotate(subJoint->grv_b, body_a->rot));
+            cpVect c = cpvadd(body_b->p, cpvrotate(subJoint->anchr2, body_b->rot));
+            
+            _drawNode->drawSegment(PhysicsHelper::cpv2point(a), PhysicsHelper::cpv2point(b), 1, lineColor);
+            _drawNode->drawDot(PhysicsHelper::cpv2point(c), 2, jointPointColor);
+        }
+        else if(klass == cpDampedSpringGetClass())
+        {
+            cpDampedSpring *subJoint = (cpDampedSpring *)constraint;
+            
+            cpVect a = cpvadd(body_a->p, cpvrotate(subJoint->anchr1, body_a->rot));
+            cpVect b = cpvadd(body_b->p, cpvrotate(subJoint->anchr2, body_b->rot));
+            
+            _drawNode->drawSegment(PhysicsHelper::cpv2point(a), PhysicsHelper::cpv2point(b), 1, lineColor);
+            _drawNode->drawDot(PhysicsHelper::cpv2point(a), 2, jointPointColor);
+            _drawNode->drawDot(PhysicsHelper::cpv2point(b), 2, jointPointColor);
+        }
+    }
+}
+
+void PhysicsDebugDraw::drawContact()
+{
+    
 }
 
 NS_CC_END

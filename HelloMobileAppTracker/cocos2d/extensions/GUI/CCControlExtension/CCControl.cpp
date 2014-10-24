@@ -28,12 +28,12 @@
  */
 
 #include "CCControl.h"
-#include "CCDirector.h"
-#include "CCMenu.h"
-#include "CCTouch.h"
+#include "base/CCDirector.h"
+#include "2d/CCMenu.h"
+#include "base/CCTouch.h"
 #include "CCInvocation.h"
-#include "CCEventDispatcher.h"
-#include "CCEventListenerTouch.h"
+#include "base/CCEventDispatcher.h"
+#include "base/CCEventListenerTouch.h"
 
 NS_CC_EXT_BEGIN
 
@@ -59,7 +59,7 @@ Control* Control::create()
     else
     {
         CC_SAFE_DELETE(pRet);
-        return NULL;
+        return nullptr;
     }
 }
 
@@ -75,6 +75,7 @@ bool Control::init()
 
         auto dispatcher = Director::getInstance()->getEventDispatcher();
         auto touchListener = EventListenerTouchOneByOne::create();
+        touchListener->setSwallowTouches(true);
         touchListener->onTouchBegan = CC_CALLBACK_2(Control::onTouchBegan, this);
         touchListener->onTouchMoved = CC_CALLBACK_2(Control::onTouchMoved, this);
         touchListener->onTouchEnded = CC_CALLBACK_2(Control::onTouchEnded, this);
@@ -102,6 +103,7 @@ Control::~Control()
 
 void Control::sendActionsForControlEvents(EventType controlEvents)
 {
+	retain();
     // For each control events
     for (int i = 0; i < kControlEventTotalNumber; i++)
     {
@@ -115,6 +117,7 @@ void Control::sendActionsForControlEvents(EventType controlEvents)
                 invocation->invoke(this);
             }
 
+#if CC_ENABLE_SCRIPT_BINDING
             //Call ScriptFunc
             if (kScriptTypeLua == _scriptType)
             {
@@ -122,10 +125,12 @@ void Control::sendActionsForControlEvents(EventType controlEvents)
                 cocos2d::ScriptEvent event(cocos2d::kControlEvent,(void*)&data);
                 cocos2d::ScriptEngineManager::getInstance()->getScriptEngine()->sendEvent(&event);
             }
+#endif
         }
     }
+	release();
 }
-void Control::addTargetWithActionForControlEvents(Object* target, Handler action, EventType controlEvents)
+void Control::addTargetWithActionForControlEvents(Ref* target, Handler action, EventType controlEvents)
 {
     // For each control events
     for (int i = 0; i < kControlEventTotalNumber; i++)
@@ -149,11 +154,11 @@ void Control::addTargetWithActionForControlEvents(Object* target, Handler action
  *
  * @param target The target object that is, the object to which the action 
  * message is sent. It cannot be nil. The target is not retained.
- * @param action A selector identifying an action message. It cannot be NULL.
+ * @param action A selector identifying an action message. It cannot be nullptr.
  * @param controlEvent A control event for which the action message is sent.
  * See "CCControlEvent" for constants.
  */
-void Control::addTargetWithActionForControlEvent(Object* target, Handler action, EventType controlEvent)
+void Control::addTargetWithActionForControlEvent(Ref* target, Handler action, EventType controlEvent)
 {    
     // Create the invocation object
     Invocation *invocation = Invocation::create(target, action, controlEvent);
@@ -163,7 +168,7 @@ void Control::addTargetWithActionForControlEvent(Object* target, Handler action,
     eventInvocationList.pushBack(invocation);
 }
 
-void Control::removeTargetWithActionForControlEvents(Object* target, Handler action, EventType controlEvents)
+void Control::removeTargetWithActionForControlEvents(Ref* target, Handler action, EventType controlEvents)
 {
      // For each control events
     for (int i = 0; i < kControlEventTotalNumber; i++)
@@ -176,7 +181,7 @@ void Control::removeTargetWithActionForControlEvents(Object* target, Handler act
     }
 }
 
-void Control::removeTargetWithActionForControlEvent(Object* target, Handler action, EventType controlEvent)
+void Control::removeTargetWithActionForControlEvent(Ref* target, Handler action, EventType controlEvent)
 {
     // Retrieve all invocations for the given control event
     //<Invocation*>
@@ -184,7 +189,7 @@ void Control::removeTargetWithActionForControlEvent(Object* target, Handler acti
     
     //remove all invocations if the target and action are null
     //TODO: should the invocations be deleted, or just removed from the array? Won't that cause issues if you add a single invocation for multiple events?
-    bool bDeleteObjects=true;
+
     if (!target && !action)
     {
         //remove objects
@@ -213,7 +218,7 @@ void Control::removeTargetWithActionForControlEvent(Object* target, Handler acti
         }
 
         for(const auto &invocation : tobeRemovedInvocations) {
-            eventInvocationList.eraseObject(invocation, bDeleteObjects);
+            eventInvocationList.eraseObject(invocation);
         }
     }
 }
@@ -235,9 +240,9 @@ bool Control::isOpacityModifyRGB() const
 }
 
 
-Point Control::getTouchLocation(Touch* touch)
+Vec2 Control::getTouchLocation(Touch* touch)
 {
-    Point touchLocation = touch->getLocation();            // Get the touch position
+    Vec2 touchLocation = touch->getLocation();            // Get the touch position
     touchLocation = this->convertToNodeSpace(touchLocation);  // Convert to the node space of this class
     
     return touchLocation;
@@ -245,7 +250,7 @@ Point Control::getTouchLocation(Touch* touch)
 
 bool Control::isTouchInside(Touch* touch)
 {
-    Point touchLocation = touch->getLocation(); // Get the touch position
+    Vec2 touchLocation = touch->getLocation(); // Get the touch position
     touchLocation = this->getParent()->convertToNodeSpace(touchLocation);
     Rect bBox = getBoundingBox();
     return bBox.containsPoint(touchLocation);
@@ -315,7 +320,7 @@ bool Control::isHighlighted() const
 bool Control::hasVisibleParents() const
 {
     auto parent = this->getParent();
-    for( auto c = parent; c != NULL; c = c->getParent() )
+    for( auto c = parent; c != nullptr; c = c->getParent() )
     {
         if( !c->isVisible() )
         {

@@ -25,14 +25,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ****************************************************************************/
 #include "CCParallaxNode.h"
-#include "ccCArray.h"
+#include "base/ccCArray.h"
 
 NS_CC_BEGIN
 
-class PointObject : Object
+class PointObject : public Ref
 {
 public:
-    static PointObject * create(Point ratio, Point offset)
+    static PointObject * create(Vec2 ratio, Vec2 offset)
     {
         PointObject *ret = new PointObject();
         ret->initWithPoint(ratio, offset);
@@ -40,7 +40,7 @@ public:
         return ret;
     }
     
-    bool initWithPoint(Point ratio, Point offset)
+    bool initWithPoint(Vec2 ratio, Vec2 offset)
     {
         _ratio = ratio;
         _offset = offset;
@@ -48,25 +48,25 @@ public:
         return true;
     }
     
-    inline const Point& getRatio() const { return _ratio; };
-    inline void setRatio(const Point& ratio) { _ratio = ratio; };
+    inline const Vec2& getRatio() const { return _ratio; };
+    inline void setRatio(const Vec2& ratio) { _ratio = ratio; };
 
-    inline const Point& getOffset() const { return _offset; };
-    inline void setOffset(const Point& offset) { _offset = offset; };
+    inline const Vec2& getOffset() const { return _offset; };
+    inline void setOffset(const Vec2& offset) { _offset = offset; };
     
     inline Node* getChild() const { return _child; };
     inline void setChild(Node* child) { _child = child; };
     
 private:
-    Point _ratio;
-    Point _offset;
+    Vec2 _ratio;
+    Vec2 _offset;
     Node *_child; // weak ref
 };
 
 ParallaxNode::ParallaxNode()
 {
     _parallaxArray = ccArrayNew(5);        
-    _lastPosition = Point(-100,-100);
+    _lastPosition = Vec2(-100,-100);
 }
 
 ParallaxNode::~ParallaxNode()
@@ -93,26 +93,35 @@ void ParallaxNode::addChild(Node * child, int zOrder, int tag)
     CCASSERT(0,"ParallaxNode: use addChild:z:parallaxRatio:positionOffset instead");
 }
 
-void ParallaxNode::addChild(Node *child, int z, const Point& ratio, const Point& offset)
+void ParallaxNode::addChild(Node * child, int zOrder, const std::string &name)
+{
+    CC_UNUSED_PARAM(zOrder);
+    CC_UNUSED_PARAM(child);
+    CC_UNUSED_PARAM(name);
+    CCASSERT(0,"ParallaxNode: use addChild:z:parallaxRatio:positionOffset instead");
+}
+
+void ParallaxNode::addChild(Node *child, int z, const Vec2& ratio, const Vec2& offset)
 {
     CCASSERT( child != nullptr, "Argument must be non-nil");
     PointObject *obj = PointObject::create(ratio, offset);
     obj->setChild(child);
-    ccArrayAppendObjectWithResize(_parallaxArray, (Object*)obj);
+    ccArrayAppendObjectWithResize(_parallaxArray, (Ref*)obj);
 
-    Point pos = this->absolutePosition();
+    Vec2 pos = this->absolutePosition();
     pos.x = -pos.x + pos.x * ratio.x + offset.x;
     pos.y = -pos.y + pos.y * ratio.y + offset.y;
     child->setPosition(pos);
 
-    Node::addChild(child, z, child->getTag());
+    Node::addChild(child, z, child->getName());
 }
+
 void ParallaxNode::removeChild(Node* child, bool cleanup)
 {
     for( int i=0;i < _parallaxArray->num;i++)
     {
         PointObject *point = (PointObject*)_parallaxArray->arr[i];
-        if( point->getChild()->isEqual(child)) 
+        if (point->getChild() == child)
         {
             ccArrayRemoveObjectAtIndex(_parallaxArray, i, true);
             break;
@@ -120,14 +129,16 @@ void ParallaxNode::removeChild(Node* child, bool cleanup)
     }
     Node::removeChild(child, cleanup);
 }
+
 void ParallaxNode::removeAllChildrenWithCleanup(bool cleanup)
 {
     ccArrayRemoveAllObjects(_parallaxArray);
     Node::removeAllChildrenWithCleanup(cleanup);
 }
-Point ParallaxNode::absolutePosition()
+
+Vec2 ParallaxNode::absolutePosition()
 {
-    Point ret = _position;
+    Vec2 ret = _position;
     Node *cn = this;
     while (cn->getParent() != nullptr)
     {
@@ -142,11 +153,11 @@ The positions are updated at visit because:
 - using a timer is not guaranteed that it will called after all the positions were updated
 - overriding "draw" will only precise if the children have a z > 0
 */
-void ParallaxNode::visit()
+void ParallaxNode::visit(Renderer *renderer, const Mat4 &parentTransform, uint32_t parentFlags)
 {
-    //    Point pos = position_;
-    //    Point    pos = [self convertToWorldSpace:Point::ZERO];
-    Point pos = this->absolutePosition();
+    //    Vec2 pos = position_;
+    //    Vec2    pos = [self convertToWorldSpace:Vec2::ZERO];
+    Vec2 pos = this->absolutePosition();
     if( ! pos.equals(_lastPosition) )
     {
         for( int i=0; i < _parallaxArray->num; i++ ) 
@@ -154,11 +165,11 @@ void ParallaxNode::visit()
             PointObject *point = (PointObject*)_parallaxArray->arr[i];
             float x = -pos.x + pos.x * point->getRatio().x + point->getOffset().x;
             float y = -pos.y + pos.y * point->getRatio().y + point->getOffset().y;            
-            point->getChild()->setPosition(Point(x,y));
+            point->getChild()->setPosition(Vec2(x,y));
         }
         _lastPosition = pos;
     }
-    Node::visit();
+    Node::visit(renderer, parentTransform, parentFlags);
 }
 
 NS_CC_END

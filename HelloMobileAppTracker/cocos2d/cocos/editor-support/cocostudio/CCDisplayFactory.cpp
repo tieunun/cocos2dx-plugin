@@ -30,7 +30,7 @@ THE SOFTWARE.
 #include "cocostudio/CCArmatureDataManager.h"
 #include "cocostudio/CCTransformHelp.h"
 
-#include "CCParticleSystemQuad.h"
+#include "2d/CCParticleSystemQuad.h"
 
 using namespace cocos2d;
 
@@ -93,7 +93,8 @@ void DisplayFactory::updateDisplay(Bone *bone, float dt, bool dirty)
         break;
     default:
     {
-        display->setAdditionalTransform(bone->getNodeToArmatureTransform());
+        Mat4 transform = bone->getNodeToArmatureTransform();
+        display->setAdditionalTransform(&transform);
     }
     break;
     }
@@ -112,12 +113,12 @@ void DisplayFactory::updateDisplay(Bone *bone, float dt, bool dirty)
                 CC_BREAK_IF(!detector->getBody());
 #endif
 
-                kmMat4 displayTransform = display->getNodeToParentTransform();
-                Point anchorPoint =  display->getAnchorPointInPoints();
+                Mat4 displayTransform = display->getNodeToParentTransform();
+                Vec2 anchorPoint =  display->getAnchorPointInPoints();
                 anchorPoint = PointApplyTransform(anchorPoint, displayTransform);
-                displayTransform.mat[12] = anchorPoint.x;
-                displayTransform.mat[13] = anchorPoint.y;
-                kmMat4 t = TransformConcat( bone->getArmature()->getNodeToParentTransform(),displayTransform);
+                displayTransform.m[12] = anchorPoint.x;
+                displayTransform.m[13] = anchorPoint.y;
+                Mat4 t = TransformConcat( bone->getArmature()->getNodeToParentTransform(),displayTransform);
                 detector->updateTransform(t);
             }
             while (0);
@@ -201,7 +202,7 @@ void DisplayFactory::initSpriteDisplay(Bone *bone, DecorativeDisplay *decoDispla
     if(textureData)
     {
         //! Init display anchorPoint, every Texture have a anchor point
-        skin->setAnchorPoint(Point( textureData->pivotX, textureData->pivotY));
+        skin->setAnchorPoint(Vec2( textureData->pivotX, textureData->pivotY));
     }
 
 
@@ -262,6 +263,7 @@ void DisplayFactory::createParticleDisplay(Bone *bone, DecorativeDisplay *decoDi
     ParticleSystem *system = ParticleSystemQuad::create(displayData->displayName.c_str());
 
     system->removeFromParent();
+    system->cleanup();
     
     Armature *armature = bone->getArmature();
     if (armature)

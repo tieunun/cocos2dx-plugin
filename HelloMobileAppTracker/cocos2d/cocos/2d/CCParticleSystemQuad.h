@@ -65,6 +65,8 @@ public:
      This plist files can be created manually or with Particle Designer:
      */
     static ParticleSystemQuad * create(const std::string& filename);
+    /** creates a Particle Emitter with a dictionary */
+    static ParticleSystemQuad * create(ValueMap &dictionary);
 
     /** Sets a new SpriteFrame as particle.
     WARNING: this method is experimental. Use setTextureWithRect instead.
@@ -79,11 +81,11 @@ public:
      */
     void setTextureWithRect(Texture2D *texture, const Rect& rect);
 
-    /** listen the event that coming to foreground on Android
+    /** listen the event that renderer was recreated on Android/WP8
      * @js NA
      * @lua NA
      */
-    void listenBackToForeground(EventCustom* event);
+    void listenRendererRecreated(EventCustom* event);
 
     /**
      * @js NA
@@ -94,7 +96,7 @@ public:
      * @js NA
      * @lua NA
      */
-    virtual void updateQuadWithParticle(tParticle* particle, const Point& newPosition) override;
+    virtual void updateQuadWithParticle(tParticle* particle, const Vec2& newPosition) override;
     /**
      * @js NA
      * @lua NA
@@ -104,7 +106,7 @@ public:
      * @js NA
      * @lua NA
      */
-    virtual void draw() override;
+    virtual void draw(Renderer *renderer, const Mat4 &transform, uint32_t flags) override;
 
     /**
      * @js NA
@@ -118,8 +120,8 @@ public:
     virtual void setTotalParticles(int tp) override;
 
     virtual std::string getDescription() const override;
-
-protected:
+    
+CC_CONSTRUCTOR_ACCESS:
     /**
      * @js ctor
      */
@@ -129,12 +131,6 @@ protected:
      * @lua NA
      */
     virtual ~ParticleSystemQuad();
-
-    /** initializes the indices for the vertices*/
-    void initIndices();
-
-    /** initializes the texture with a rectangle measured Points */
-    void initTexCoordsWithRect(const Rect& rect);
     
     // Overrides
     /**
@@ -143,20 +139,27 @@ protected:
      */
     virtual bool initWithTotalParticles(int numberOfParticles) override;
 
+protected:
+    /** initializes the indices for the vertices*/
+    void initIndices();
+    
+    /** initializes the texture with a rectangle measured Points */
+    void initTexCoordsWithRect(const Rect& rect);
+    
+    /** Updates texture coords */
+    void updateTexCoords();
+
     void setupVBOandVAO();
     void setupVBO();
     bool allocMemory();
 
     V3F_C4B_T2F_Quad    *_quads;        // quads to be rendered
-    GLushort            *_indices;    // indices
-    
-    GLuint                _VAOname;
-    
-    GLuint                _buffersVBO[2]; //0: vertex  1: indices
+    GLushort            *_indices;      // indices
+    GLuint              _VAOname;
+    GLuint              _buffersVBO[2]; //0: vertex  1: indices
 
-    kmMat4                _transformMatrix;
-    
-    QuadCommand _quadCommand;     // quad command
+    QuadCommand _quadCommand;           // quad command
+
 private:
     CC_DISALLOW_COPY_AND_ASSIGN(ParticleSystemQuad);
 };

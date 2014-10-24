@@ -25,10 +25,10 @@
  THE SOFTWARE.
  ****************************************************************************/
 
-#include "CCActionInstant.h"
-#include "CCNode.h"
-#include "CCSprite.h"
-#include "CCScriptSupport.h"
+#include "2d/CCActionInstant.h"
+#include "2d/CCNode.h"
+#include "2d/CCSprite.h"
+#include "base/CCScriptSupport.h"
 
 #if defined(__GNUC__) && ((__GNUC__ >= 4) || ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 1)))
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -278,7 +278,7 @@ FlipY * FlipY::clone() const
 // Place
 //
 
-Place* Place::create(const Point& pos)
+Place* Place::create(const Vec2& pos)
 {
     Place *ret = new Place();
 
@@ -291,7 +291,7 @@ Place* Place::create(const Point& pos)
     return nullptr;
 }
 
-bool Place::initWithPosition(const Point& pos) {
+bool Place::initWithPosition(const Vec2& pos) {
     _position = pos;
     return true;
 }
@@ -333,7 +333,7 @@ CallFunc * CallFunc::create(const std::function<void()> &func)
     return nullptr;
 }
 
-CallFunc * CallFunc::create(Object* selectorTarget, SEL_CallFunc selector) 
+CallFunc * CallFunc::create(Ref* selectorTarget, SEL_CallFunc selector) 
 {
     CallFunc *ret = new CallFunc();
 
@@ -353,7 +353,7 @@ bool CallFunc::initWithFunction(const std::function<void()> &func)
     return true;
 }
 
-bool CallFunc::initWithTarget(Object* target) {
+bool CallFunc::initWithTarget(Ref* target) {
     if (target)
     {
         target->retain();
@@ -426,7 +426,7 @@ CallFuncN * CallFuncN::create(const std::function<void(Node*)> &func)
 }
 
 // XXX deprecated
-CallFuncN * CallFuncN::create(Object* selectorTarget, SEL_CallFuncN selector)
+CallFuncN * CallFuncN::create(Ref* selectorTarget, SEL_CallFuncN selector)
 {
     CallFuncN *ret = new CallFuncN();
 
@@ -455,7 +455,7 @@ bool CallFuncN::initWithFunction(const std::function<void (Node *)> &func)
     return true;
 }
 
-bool CallFuncN::initWithTarget(Object* selectorTarget, SEL_CallFuncN selector)
+bool CallFuncN::initWithTarget(Ref* selectorTarget, SEL_CallFuncN selector)
 {
     if (CallFunc::initWithTarget(selectorTarget)) {
         _callFuncN = selector;
@@ -485,7 +485,7 @@ CallFuncN * CallFuncN::clone() const
 // CallFuncND
 //
 
-__CCCallFuncND * __CCCallFuncND::create(Object* selectorTarget, SEL_CallFuncND selector, void* d)
+__CCCallFuncND * __CCCallFuncND::create(Ref* selectorTarget, SEL_CallFuncND selector, void* d)
 {
     __CCCallFuncND* ret = new __CCCallFuncND();
     
@@ -498,7 +498,7 @@ __CCCallFuncND * __CCCallFuncND::create(Object* selectorTarget, SEL_CallFuncND s
     return nullptr;
 }
 
-bool __CCCallFuncND::initWithTarget(Object* selectorTarget, SEL_CallFuncND selector, void* d)
+bool __CCCallFuncND::initWithTarget(Ref* selectorTarget, SEL_CallFuncND selector, void* d)
 {
     if (CallFunc::initWithTarget(selectorTarget))
     {
@@ -552,7 +552,7 @@ void __CCCallFuncO::execute()
     }
 }
 
-__CCCallFuncO * __CCCallFuncO::create(Object* selectorTarget, SEL_CallFuncO selector, Object* object)
+__CCCallFuncO * __CCCallFuncO::create(Ref* selectorTarget, SEL_CallFuncO selector, Ref* object)
 {
     __CCCallFuncO *ret = new __CCCallFuncO();
     
@@ -565,7 +565,7 @@ __CCCallFuncO * __CCCallFuncO::create(Object* selectorTarget, SEL_CallFuncO sele
     return nullptr;
 }
 
-bool __CCCallFuncO::initWithTarget(Object* selectorTarget, SEL_CallFuncO selector, Object* object)
+bool __CCCallFuncO::initWithTarget(Ref* selectorTarget, SEL_CallFuncO selector, Ref* object)
 {
     if (CallFunc::initWithTarget(selectorTarget))
     {
@@ -593,12 +593,12 @@ __CCCallFuncO * __CCCallFuncO::clone() const
 	return a;
 }
 
-Object* __CCCallFuncO::getObject() const
+Ref* __CCCallFuncO::getObject() const
 {
     return _object;
 }
     
-void __CCCallFuncO::setObject(Object* obj)
+void __CCCallFuncO::setObject(Ref* obj)
 {
     if (obj != _object)
     {

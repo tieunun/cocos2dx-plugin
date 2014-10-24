@@ -36,9 +36,9 @@
 
 #include <spine/spine.h>
 
-#include "CCNode.h"
-#include "CCProtocols.h"
-#include "CCTextureAtlas.h"
+#include "2d/CCNode.h"
+#include "base/CCProtocols.h"
+#include "renderer/CCTextureAtlas.h"
 #include "renderer/CCCustomCommand.h"
 
 namespace spine {
@@ -67,8 +67,10 @@ public:
 	virtual ~Skeleton ();
 
 	virtual void update (float deltaTime) override;
-	virtual void draw() override;
-    void onDraw();
+	virtual void draw(cocos2d::Renderer *renderer, const cocos2d::Mat4 &transform, uint32_t flags) override;
+    void onDraw(const cocos2d::Mat4 &transform, uint32_t flags);
+	void onEnter() override;
+	void onExit() override;
 	virtual cocos2d::Rect getBoundingBox () const override;
 
 	// --- Convenience methods for common Skeleton_* functions.
@@ -109,9 +111,7 @@ private:
     // Util function that setting blend-function by nextRenderedTexture's premultiplied flag
     void setFittedBlendingFunc(cocos2d::TextureAtlas * nextRenderedTexture);
     
-    cocos2d::CustomCommand _customCommand;
-    
-    kmMat4 _oldTransMatrix;
+    cocos2d::CustomCommand _customCommand;    
 };
 
 }

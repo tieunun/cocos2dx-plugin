@@ -41,8 +41,8 @@ EditBoxImpl* __createSystemEditBox(EditBox* pEditBox)
 
 EditBoxImplAndroid::EditBoxImplAndroid(EditBox* pEditText)
 : EditBoxImpl(pEditText)
-, _label(NULL)
-, _labelPlaceHolder(NULL)
+, _label(nullptr)
+, _labelPlaceHolder(nullptr)
 , _editBoxInputMode(EditBox::InputMode::SINGLE_LINE)
 , _editBoxInputFlag(EditBox::InputFlag::INTIAL_CAPS_ALL_CHARACTERS)
 , _keyboardReturnType(EditBox::KeyboardReturnType::DEFAULT)
@@ -68,17 +68,19 @@ static const int CC_EDIT_BOX_PADDING = 5;
 bool EditBoxImplAndroid::initWithSize(const Size& size)
 {
     int fontSize = getFontSizeAccordingHeightJni(size.height-12);
-    _label = LabelTTF::create("", "", size.height-12);
+    _label = Label::create();
+    _label->setSystemFontSize(size.height-12);
 	// align the text vertically center
-    _label->setAnchorPoint(Point(0, 0.5f));
-    _label->setPosition(Point(CC_EDIT_BOX_PADDING, size.height / 2.0f));
+    _label->setAnchorPoint(Vec2(0, 0.5f));
+    _label->setPosition(Vec2(CC_EDIT_BOX_PADDING, size.height / 2.0f));
     _label->setColor(_colText);
     _editBox->addChild(_label);
 	
-    _labelPlaceHolder = LabelTTF::create("", "", size.height-12);
+    _labelPlaceHolder = Label::create();
+    _labelPlaceHolder->setSystemFontSize(size.height-12);
 	// align the text vertically center
-    _labelPlaceHolder->setAnchorPoint(Point(0, 0.5f));
-    _labelPlaceHolder->setPosition(Point(CC_EDIT_BOX_PADDING, size.height / 2.0f));
+    _labelPlaceHolder->setAnchorPoint(Vec2(0, 0.5f));
+    _labelPlaceHolder->setPosition(Vec2(CC_EDIT_BOX_PADDING, size.height / 2.0f));
     _labelPlaceHolder->setVisible(false);
     _labelPlaceHolder->setColor(_colPlaceHolder);
     _editBox->addChild(_labelPlaceHolder);
@@ -90,13 +92,13 @@ bool EditBoxImplAndroid::initWithSize(const Size& size)
 void EditBoxImplAndroid::setFont(const char* pFontName, int fontSize)
 {
 	if(_label != NULL) {
-		_label->setFontName(pFontName);
-		_label->setFontSize(fontSize);
+		_label->setSystemFontName(pFontName);
+		_label->setSystemFontSize(fontSize);
 	}
 	
 	if(_labelPlaceHolder != NULL) {
-		_labelPlaceHolder->setFontName(pFontName);
-		_labelPlaceHolder->setFontSize(fontSize);
+		_labelPlaceHolder->setSystemFontName(pFontName);
+		_labelPlaceHolder->setSystemFontSize(fontSize);
 	}
 }
 
@@ -109,8 +111,8 @@ void EditBoxImplAndroid::setFontColor(const Color3B& color)
 void EditBoxImplAndroid::setPlaceholderFont(const char* pFontName, int fontSize)
 {
 	if(_labelPlaceHolder != NULL) {
-		_labelPlaceHolder->setFontName(pFontName);
-		_labelPlaceHolder->setFontSize(fontSize);
+		_labelPlaceHolder->setSystemFontName(pFontName);
+		_labelPlaceHolder->setSystemFontSize(fontSize);
 	}
 }
 
@@ -167,7 +169,7 @@ void EditBoxImplAndroid::setText(const char* pText)
                 long length = cc_utf8_strlen(_text.c_str(), -1);
                 for (long i = 0; i < length; i++)
                 {
-                    strToShow.append("\u25CF");
+                    strToShow.append("*");
                 }
             }
             else
@@ -178,13 +180,12 @@ void EditBoxImplAndroid::setText(const char* pText)
 			_label->setString(strToShow.c_str());
 
 			// Clip the text width to fit to the text box
-			float fMaxWidth = _editSize.width - CC_EDIT_BOX_PADDING * 2;
-			Rect clippingRect = _label->getTextureRect();
-			if(clippingRect.size.width > fMaxWidth) {
-				clippingRect.size.width = fMaxWidth;
-				_label->setTextureRect(clippingRect);
-			}
 
+            float fMaxWidth = _editSize.width - CC_EDIT_BOX_PADDING * 2;
+            auto labelSize = _label->getContentSize();
+            if(labelSize.width > fMaxWidth) {
+                _label->setDimensions(fMaxWidth,labelSize.height);
+            }
         }
         else
         {
@@ -214,7 +215,7 @@ void EditBoxImplAndroid::setPlaceHolder(const char* pText)
     }
 }
 
-void EditBoxImplAndroid::setPosition(const Point& pos)
+void EditBoxImplAndroid::setPosition(const Vec2& pos)
 { // don't need to be implemented on android platform.
 	
 }
@@ -229,7 +230,7 @@ void EditBoxImplAndroid::setContentSize(const Size& size)
 	
 }
 
-void EditBoxImplAndroid::setAnchorPoint(const Point& anchorPoint)
+void EditBoxImplAndroid::setAnchorPoint(const Vec2& anchorPoint)
 { // don't need to be implemented on android platform.
 	
 }
@@ -256,21 +257,23 @@ static void editBoxCallbackFunc(const char* pText, void* ctx)
         thiz->getDelegate()->editBoxReturn(thiz->getEditBox());
     }
     
+#if CC_ENABLE_SCRIPT_BINDING
     EditBox* pEditBox = thiz->getEditBox();
     if (NULL != pEditBox && 0 != pEditBox->getScriptEditBoxHandler())
     {        
         CommonScriptData data(pEditBox->getScriptEditBoxHandler(), "changed",pEditBox);
         ScriptEvent event(kCommonEvent,(void*)&data);
         ScriptEngineManager::getInstance()->getScriptEngine()->sendEvent(&event);
-        memset(data.eventName,0,64*sizeof(char));
-        strncpy(data.eventName,"ended",64);
+        memset(data.eventName, 0, sizeof(data.eventName));
+        strncpy(data.eventName, "ended", sizeof(data.eventName));
         event.data = (void*)&data;
         ScriptEngineManager::getInstance()->getScriptEngine()->sendEvent(&event);
-        memset(data.eventName,0,64*sizeof(char));
-        strncpy(data.eventName,"return",64);
+        memset(data.eventName, 0, sizeof(data.eventName));
+        strncpy(data.eventName, "return", sizeof(data.eventName));
         event.data = (void*)&data;
         ScriptEngineManager::getInstance()->getScriptEngine()->sendEvent(&event);
     }
+#endif
 }
 
 void EditBoxImplAndroid::openKeyboard()
@@ -279,6 +282,8 @@ void EditBoxImplAndroid::openKeyboard()
     {
         _delegate->editBoxEditingDidBegin(_editBox);
     }
+    
+#if CC_ENABLE_SCRIPT_BINDING
     EditBox* pEditBox = this->getEditBox();
     if (NULL != pEditBox && 0 != pEditBox->getScriptEditBoxHandler())
     {        
@@ -286,6 +291,7 @@ void EditBoxImplAndroid::openKeyboard()
         ScriptEvent event(cocos2d::kCommonEvent,(void*)&data);
         ScriptEngineManager::getInstance()->getScriptEngine()->sendEvent(&event);
     }
+#endif
 	
     showEditTextDialogJNI(  _placeHolder.c_str(),
 						  _text.c_str(),

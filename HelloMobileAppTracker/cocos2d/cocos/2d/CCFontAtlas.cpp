@@ -23,54 +23,83 @@
  THE SOFTWARE.
  ****************************************************************************/
 
-#include "CCFontAtlas.h"
-#include "CCFontFreeType.h"
-#include "ccUTF8.h"
-#include "CCDirector.h"
+#include "2d/CCFontAtlas.h"
+#include "2d/CCFontFreeType.h"
+#include "base/ccUTF8.h"
+#include "base/CCDirector.h"
+#include "base/CCEventListenerCustom.h"
+#include "base/CCEventDispatcher.h"
+#include "base/CCEventType.h"
 
-#define  PAGE_WIDTH 1024
-#define  PAGE_HEIGHT 1024
 
 NS_CC_BEGIN
 
-FontAtlas::FontAtlas(Font &theFont) : 
-_font(&theFont),
-_currentPageData(nullptr)
+const int FontAtlas::CacheTextureWidth = 512;
+const int FontAtlas::CacheTextureHeight = 512;
+const char* FontAtlas::EVENT_PURGE_TEXTURES = "__cc_FontAtlasPurgeTextures";
+
+FontAtlas::FontAtlas(Font &theFont) 
+: _font(&theFont)
+, _currentPageData(nullptr)
+, _fontAscender(0)
+, _rendererRecreatedListener(nullptr)
+, _antialiasEnabled(true)
+, _rendererRecreate(false)
 {
     _font->retain();
 
     FontFreeType* fontTTf = dynamic_cast<FontFreeType*>(_font);
     if (fontTTf)
     {
-        _currentPageLineHeight = _font->getFontMaxHeight();
-        _commonLineHeight = _currentPageLineHeight * 0.8f;
-        Texture2D * tex = new Texture2D;
+        _commonLineHeight = _font->getFontMaxHeight();
+        _fontAscender = fontTTf->getFontAscender();
+        auto texture = new Texture2D;
         _currentPage = 0;
         _currentPageOrigX = 0;
         _currentPageOrigY = 0;
         _letterPadding = 0;
 
-        _makeDistanceMap = fontTTf->isDistanceFieldEnabled();
-        if(_makeDistanceMap)
+        if(fontTTf->isDistanceFieldEnabled())
         {
-            _commonLineHeight += 2 * FontFreeType::DistanceMapSpread;
             _letterPadding += 2 * FontFreeType::DistanceMapSpread;    
         }
-        _currentPageDataSize = (PAGE_WIDTH * PAGE_HEIGHT * 1);
+        _currentPageDataSize = CacheTextureWidth * CacheTextureHeight;
+        if(fontTTf->getOutlineSize() > 0)
+        {
+            _currentPageDataSize *= 2;
+        }    
 
-        _currentPageData = new unsigned char[_currentPageDataSize];       
-        memset(_currentPageData, 0, _currentPageDataSize);  
-        addTexture(*tex,0);
-        tex->release();
-    }
-    else
-    {
-        _makeDistanceMap = false;
+        _currentPageData = new unsigned char[_currentPageDataSize];
+        memset(_currentPageData, 0, _currentPageDataSize);
+
+        auto  pixelFormat = fontTTf->getOutlineSize() > 0 ? Texture2D::PixelFormat::AI88 : Texture2D::PixelFormat::A8; 
+        texture->initWithData(_currentPageData, _currentPageDataSize, 
+            pixelFormat, CacheTextureWidth, CacheTextureHeight, Size(CacheTextureWidth,CacheTextureHeight) );
+
+        addTexture(texture,0);
+        texture->release();
+
+#if CC_ENABLE_CACHE_TEXTURE_DATA
+        auto eventDispatcher = Director::getInstance()->getEventDispatcher();
+
+        _rendererRecreatedListener = EventListenerCustom::create(EVENT_RENDERER_RECREATED, CC_CALLBACK_1(FontAtlas::listenRendererRecreated, this));
+        eventDispatcher->addEventListenerWithFixedPriority(_rendererRecreatedListener, 1);
+#endif
     }
 }
 
 FontAtlas::~FontAtlas()
 {
+#if CC_ENABLE_CACHE_TEXTURE_DATA
+    FontFreeType* fontTTf = dynamic_cast<FontFreeType*>(_font);
+    if (fontTTf && _rendererRecreatedListener)
+    {
+        auto eventDispatcher = Director::getInstance()->getEventDispatcher();
+        eventDispatcher->removeEventListener(_rendererRecreatedListener);
+        _rendererRecreatedListener = nullptr;
+    }
+#endif
+
     _font->release();
     relaseTextures();
 
@@ -83,6 +112,63 @@ void FontAtlas::relaseTextures()
     {
         item.second->release();
     }
+    _atlasTextures.clear();
+}
+
+void FontAtlas::purgeTexturesAtlas()
+{
+    FontFreeType* fontTTf = dynamic_cast<FontFreeType*>(_font);
+    if (fontTTf && _atlasTextures.size() > 1)
+    {
+        for( auto &item: _atlasTextures)
+        {
+            if (item.first != 0)
+            {
+                item.second->release();
+            }
+        }
+        auto temp = _atlasTextures[0];
+        _atlasTextures.clear();
+        _atlasTextures[0] = temp;
+
+        _fontLetterDefinitions.clear();
+        memset(_currentPageData,0,_currentPageDataSize);
+        _currentPage = 0;
+        _currentPageOrigX = 0;
+        _currentPageOrigY = 0;
+
+        auto eventDispatcher = Director::getInstance()->getEventDispatcher();
+        eventDispatcher->dispatchCustomEvent(EVENT_PURGE_TEXTURES,this);
+    }
+}
+
+void FontAtlas::listenRendererRecreated(EventCustom *event)
+{
+    FontFreeType* fontTTf = dynamic_cast<FontFreeType*>(_font);
+    if (fontTTf)
+    {
+        for( auto &item: _atlasTextures)
+        {
+            if (item.first != 0)
+            {
+                item.second->release();
+            }
+        }
+        auto temp = _atlasTextures[0];
+        _atlasTextures.clear();
+        _atlasTextures[0] = temp;
+
+        _fontLetterDefinitions.clear();
+        memset(_currentPageData,0,_currentPageDataSize);
+        _currentPage = 0;
+        _currentPageOrigX = 0;
+        _currentPageOrigY = 0;
+
+        _rendererRecreate = true;
+        auto eventDispatcher = Director::getInstance()->getEventDispatcher();
+        eventDispatcher->dispatchCustomEvent(EVENT_PURGE_TEXTURES,this);
+        _rendererRecreate = false;
+    }
 }
 
 void FontAtlas::addLetterDefinition(const FontLetterDefinition &letterDefinition)
@@ -90,10 +176,10 @@ void FontAtlas::addLetterDefinition(const FontLetterDefinition &letterDefinition
     _fontLetterDefinitions[letterDefinition.letteCharUTF16] = letterDefinition;
 }
 
-bool FontAtlas::getLetterDefinitionForChar(unsigned short  letteCharUTF16, FontLetterDefinition &outDefinition)
+bool FontAtlas::getLetterDefinitionForChar(char16_t letteCharUTF16, FontLetterDefinition &outDefinition)
 {
     auto outIterator = _fontLetterDefinitions.find(letteCharUTF16);
-    
+
     if (outIterator != _fontLetterDefinitions.end())
     {
         outDefinition = (*outIterator).second;
@@ -106,35 +192,103 @@ bool FontAtlas::getLetterDefinitionForChar(unsigned short  letteCharUTF16, FontL
     }
 }
 
-bool FontAtlas::prepareLetterDefinitions(unsigned short *utf16String)
+bool FontAtlas::prepareLetterDefinitions(const std::u16string& utf16String)
 {
-    if(_currentPageData == nullptr)
+    FontFreeType* fontTTf = dynamic_cast<FontFreeType*>(_font);
+    if(fontTTf == nullptr)
         return false;
+    
+    size_t length = utf16String.length();
 
-    FontFreeType* fontTTf = (FontFreeType*)_font;
+    float offsetAdjust = _letterPadding / 2;  
+    long bitmapWidth;
+    long bitmapHeight;
+    Rect tempRect;
+    FontLetterDefinition tempDef;
 
-    std::unordered_map<unsigned short, FontLetterDefinition> fontDefs;
-    int length = cc_wcslen(utf16String);
+    auto scaleFactor = CC_CONTENT_SCALE_FACTOR();
+    auto  pixelFormat = fontTTf->getOutlineSize() > 0 ? Texture2D::PixelFormat::AI88 : Texture2D::PixelFormat::A8; 
 
-    float offsetAdjust = _letterPadding / 2;
-    //find out new letter
-    for (int i = 0; i < length; ++i)
+    bool existNewLetter = false;
+    int bottomHeight = _commonLineHeight - _fontAscender;
+
+    float startY = _currentPageOrigY;
+
+    for (size_t i = 0; i < length; ++i)
     {
         auto outIterator = _fontLetterDefinitions.find(utf16String[i]);
-        
+
         if (outIterator == _fontLetterDefinitions.end())
         {  
-            auto outIterator2 = fontDefs.find(utf16String[i]);
-            if(outIterator2 != fontDefs.end())
-                continue;
+            existNewLetter = true;
 
-            Rect tempRect;           
-
-            FontLetterDefinition tempDef;
-
-            if (!fontTTf->getBBOXFotChar(utf16String[i], tempRect,tempDef.xAdvance))
+            auto bitmap = fontTTf->getGlyphBitmap(utf16String[i],bitmapWidth,bitmapHeight,tempRect,tempDef.xAdvance);
+            if (bitmap)
             {
-                tempDef.validDefinition = false;
+                tempDef.validDefinition = true;
+                tempDef.letteCharUTF16   = utf16String[i];
+                tempDef.width            = tempRect.size.width + _letterPadding;
+                tempDef.height           = tempRect.size.height + _letterPadding;
+                tempDef.offsetX          = tempRect.origin.x + offsetAdjust;
+                tempDef.offsetY          = _fontAscender + tempRect.origin.y - offsetAdjust;
+                tempDef.clipBottom     = bottomHeight - (tempDef.height + tempRect.origin.y + offsetAdjust);
+
+                if (_currentPageOrigX + tempDef.width > CacheTextureWidth)
+                {
+                    _currentPageOrigY += _commonLineHeight;
+                    _currentPageOrigX = 0;
+                    if(_currentPageOrigY + _commonLineHeight >= CacheTextureHeight)
+                    {
+                        unsigned char *data = nullptr;
+                        if(pixelFormat == Texture2D::PixelFormat::AI88)
+                        {
+                            data = _currentPageData + CacheTextureWidth * (int)startY * 2;
+                        }
+                        else
+                        {
+                            data = _currentPageData + CacheTextureWidth * (int)startY;
+                        }
+                        _atlasTextures[_currentPage]->updateWithData(data, 0, startY, 
+                            CacheTextureWidth, CacheTextureHeight - startY);
+
+                        startY = 0.0f;
+
+                        _currentPageOrigY = 0;
+                        memset(_currentPageData, 0, _currentPageDataSize);
+                        _currentPage++;
+                        auto tex = new Texture2D;
+                        if (_antialiasEnabled)
+                        {
+                            tex->setAntiAliasTexParameters();
+                        } 
+                        else
+                        {
+                            tex->setAliasTexParameters();
+                        }
+                        tex->initWithData(_currentPageData, _currentPageDataSize, 
+                            pixelFormat, CacheTextureWidth, CacheTextureHeight, Size(CacheTextureWidth,CacheTextureHeight) );
+                        addTexture(tex,_currentPage);
+                        tex->release();
+                    }  
+                }
+                fontTTf->renderCharAt(_currentPageData,_currentPageOrigX,_currentPageOrigY,bitmap,bitmapWidth,bitmapHeight);
+
+                tempDef.U                = _currentPageOrigX;
+                tempDef.V                = _currentPageOrigY;
+                tempDef.textureID        = _currentPage;
+                _currentPageOrigX        += tempDef.width + 1;
+                // take from pixels to points
+                tempDef.width  =    tempDef.width  / scaleFactor;
+                tempDef.height =    tempDef.height / scaleFactor;      
+                tempDef.U      =    tempDef.U      / scaleFactor;
+                tempDef.V      =    tempDef.V      / scaleFactor;
+            }
+            else{
+                if(tempDef.xAdvance)
+                    tempDef.validDefinition = true;
+                else
+                    tempDef.validDefinition = false;
+
                 tempDef.letteCharUTF16   = utf16String[i];
                 tempDef.width            = 0;
                 tempDef.height           = 0;
@@ -143,84 +297,48 @@ bool FontAtlas::prepareLetterDefinitions(unsigned short *utf16String)
                 tempDef.offsetX          = 0;
                 tempDef.offsetY          = 0;
                 tempDef.textureID        = 0;
-                tempDef.xAdvance         = 0;
+                tempDef.clipBottom = 0;
+                _currentPageOrigX += 1;
             }
-            else
-            {
-                tempDef.validDefinition = true;
-                tempDef.letteCharUTF16   = utf16String[i];
-                tempDef.width            = tempRect.size.width + _letterPadding;
-                tempDef.height           = tempRect.size.height + _letterPadding;
-                tempDef.offsetX          = tempRect.origin.x + offsetAdjust;
-                tempDef.offsetY          = _commonLineHeight + tempRect.origin.y - offsetAdjust;
-            } 
-            fontDefs[utf16String[i]] = tempDef;
+
+            _fontLetterDefinitions[tempDef.letteCharUTF16] = tempDef;
         }       
     }
 
-    Size _pageContentSize = Size(PAGE_WIDTH,PAGE_HEIGHT);
-    float scaleFactor = CC_CONTENT_SCALE_FACTOR();
-    float glyphWidth;
-    Texture2D::PixelFormat  pixelFormat = Texture2D::PixelFormat::A8;
-    
-
-    for(auto it = fontDefs.begin(); it != fontDefs.end(); it++)
+    if(existNewLetter)
     {
-        if(it->second.validDefinition)
+        if (_rendererRecreate)
         {
-            glyphWidth = it->second.width;
-
-            if (_currentPageOrigX + glyphWidth > PAGE_WIDTH)
-            {
-                _currentPageOrigY += _currentPageLineHeight;
-                _currentPageOrigX = 0;
-                if(_currentPageOrigY >= PAGE_HEIGHT)
-                {             
-                    _atlasTextures[_currentPage]->initWithData(_currentPageData, _currentPageDataSize, pixelFormat, PAGE_WIDTH, PAGE_HEIGHT, _pageContentSize );
-                    _currentPageOrigY = 0;
-
-                    delete []_currentPageData;
-                    _currentPageData = new unsigned char[_currentPageDataSize];
-                    if(_currentPageData == nullptr)
-                        return false;
-                    memset(_currentPageData, 0, _currentPageDataSize);
-                    _currentPage++;
-                    Texture2D* tex = new Texture2D;
-                    addTexture(*tex,_currentPage);
-                    tex->release();
-                }
-            }
-            fontTTf->renderCharAt(it->second.letteCharUTF16,_currentPageOrigX,_currentPageOrigY,_currentPageData,PAGE_WIDTH);
-
-            it->second.U                = _currentPageOrigX;
-            it->second.V                = _currentPageOrigY;
-            it->second.textureID        = _currentPage;
-            // take from pixels to points
-            it->second.width  =    it->second.width  / scaleFactor;
-            it->second.height =    it->second.height / scaleFactor;      
-            it->second.U      =    it->second.U      / scaleFactor;
-            it->second.V      =    it->second.V      / scaleFactor;
-        }
+            _atlasTextures[_currentPage]->initWithData(_currentPageData, _currentPageDataSize, 
+                pixelFormat, CacheTextureWidth, CacheTextureHeight, Size(CacheTextureWidth,CacheTextureHeight) );
+        } 
         else
-            glyphWidth = 0;       
-       
-        _fontLetterDefinitions[it->second.letteCharUTF16] = it->second;
-        _currentPageOrigX += glyphWidth + 1;
+        {
+            unsigned char *data = nullptr;
+            if(pixelFormat == Texture2D::PixelFormat::AI88)
+            {
+                data = _currentPageData + CacheTextureWidth * (int)startY * 2;
+            }
+            else
+            {
+                data = _currentPageData + CacheTextureWidth * (int)startY;
+            }
+            _atlasTextures[_currentPage]->updateWithData(data, 0, startY, 
+                CacheTextureWidth, _currentPageOrigY - startY + _commonLineHeight);
+        }
     }
-    if(fontDefs.size() > 0)
-        _atlasTextures[_currentPage]->initWithData(_currentPageData, _currentPageDataSize, pixelFormat, PAGE_WIDTH, PAGE_HEIGHT, _pageContentSize );
     return true;
 }
 
-void FontAtlas::addTexture(Texture2D &texture, int slot)
+void FontAtlas::addTexture(Texture2D *texture, int slot)
 {
-    texture.retain();
-    _atlasTextures[slot] = &texture;
+    texture->retain();
+    _atlasTextures[slot] = texture;
 }
 
-Texture2D & FontAtlas::getTexture(int slot)
+Texture2D* FontAtlas::getTexture(int slot)
 {
-    return *(_atlasTextures[slot]);
+    return _atlasTextures[slot];
 }
 
 float FontAtlas::getCommonLineHeight() const
@@ -236,6 +354,30 @@ void  FontAtlas::setCommonLineHeight(float newHeight)
 const Font * FontAtlas::getFont() const
 {
     return _font;
+}
+
+void FontAtlas::setAliasTexParameters()
+{
+    if (_antialiasEnabled)
+    {
+        _antialiasEnabled = false;
+        for (const auto & tex : _atlasTextures)
+        {
+            tex.second->setAliasTexParameters();
+        }
+    }
+}
+
+void FontAtlas::setAntiAliasTexParameters()
+{
+    if (! _antialiasEnabled)
+    {
+        _antialiasEnabled = true;
+        for (const auto & tex : _atlasTextures)
+        {
+            tex.second->setAntiAliasTexParameters();
+        }
+    }
 }
 
 NS_CC_END

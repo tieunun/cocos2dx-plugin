@@ -27,13 +27,12 @@ THE SOFTWARE.
 #ifndef __CC_ANIMATION_H__
 #define __CC_ANIMATION_H__
 
-#include "CCPlatformConfig.h"
-#include "CCObject.h"
-#include "CCArray.h"
-#include "CCValue.h"
-#include "CCGeometry.h"
-#include "CCSpriteFrame.h"
-#include "CCVector.h"
+#include "base/CCPlatformConfig.h"
+#include "base/CCRef.h"
+#include "base/CCValue.h"
+#include "math/CCGeometry.h"
+#include "2d/CCSpriteFrame.h"
+#include "base/CCVector.h"
 
 #include <string>
 
@@ -55,9 +54,16 @@ class SpriteFrame;
  
  @since v2.0
  */
-class CC_DLL AnimationFrame : public Object, public Clonable
+class CC_DLL AnimationFrame : public Ref, public Clonable
 {
 public:
+    
+    struct DisplayedEventInfo
+    {
+        Node* target;
+        const ValueMap* userInfo;
+    };
+    
     /**
      * Creates the animation frame with a spriteframe, number of delay units and a notification user info
      * @since 3.0
@@ -93,9 +99,8 @@ public:
     
     // Overrides
 	virtual AnimationFrame *clone() const override;
-
-protected:
     
+CC_CONSTRUCTOR_ACCESS:
     /**
      * @js ctor
      */
@@ -108,6 +113,8 @@ protected:
     
     /** initializes the animation frame with a spriteframe, number of delay units and a notification user info */
     bool initWithSpriteFrame(SpriteFrame* spriteFrame, float delayUnits, const ValueMap& userInfo);
+
+protected:
     
     /** SpriteFrameName to be used */
     SpriteFrame* _spriteFrame;
@@ -135,7 +142,7 @@ You can animate a Animation object by using the Animate action. Example:
 @endcode
 
 */
-class CC_DLL Animation : public Object, public Clonable
+class CC_DLL Animation : public Ref, public Clonable
 {
 public:
     /** Creates an animation
@@ -147,7 +154,7 @@ public:
      The frames will be added with one "delay unit".
      @since v0.99.5
      */
-    static Animation* createWithSpriteFrames(const Vector<SpriteFrame*>& arrayOfSpriteFrameNames, float delay = 0.0f);
+    static Animation* createWithSpriteFrames(const Vector<SpriteFrame*>& arrayOfSpriteFrameNames, float delay = 0.0f, unsigned int loops = 1);
 
     /* Creates an animation with an array of AnimationFrame, the delay per units in seconds and and how many times it should be executed.
      @since v2.0
@@ -212,8 +219,8 @@ public:
     
     // overrides
 	virtual Animation *clone() const override;
-
-protected:
+    
+CC_CONSTRUCTOR_ACCESS:
     Animation();
     virtual ~Animation(void);
     
@@ -223,13 +230,14 @@ protected:
     /** Initializes a Animation with frames and a delay between frames
      @since v0.99.5
      */
-    bool initWithSpriteFrames(const Vector<SpriteFrame*>& arrayOfSpriteFrameNames, float delay = 0.0f);
+    bool initWithSpriteFrames(const Vector<SpriteFrame*>& arrayOfSpriteFrameNames, float delay = 0.0f, unsigned int loops = 1);
     
     /** Initializes a Animation with AnimationFrame
      @since v2.0
      */
     bool initWithAnimationFrames(const Vector<AnimationFrame*>& arrayOfAnimationFrameNames, float delayPerUnit, unsigned int loops);
-    
+
+protected:
     /** total Delay units of the Animation. */
     float _totalDelayUnits;
 

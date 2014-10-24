@@ -30,7 +30,7 @@
 #include <vector>
 #include <thread>
 
-#if (CC_TARGET_PLATFORM != CC_PLATFORM_WIN32)
+#if (CC_TARGET_PLATFORM != CC_PLATFORM_WIN32) && (CC_TARGET_PLATFORM != CC_PLATFORM_WP8) && (CC_TARGET_PLATFORM != CC_PLATFORM_WINRT)
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -77,15 +77,15 @@ struct ProgressMessage
 
 // Implementation of AssetsManager
 
-AssetsManager::AssetsManager(const char* packageUrl/* =NULL */, const char* versionFileUrl/* =NULL */, const char* storagePath/* =NULL */)
+AssetsManager::AssetsManager(const char* packageUrl/* =nullptr */, const char* versionFileUrl/* =nullptr */, const char* storagePath/* =nullptr */)
 :  _storagePath(storagePath)
 , _version("")
 , _packageUrl(packageUrl)
 , _versionFileUrl(versionFileUrl)
 , _downloadedVersion("")
-, _curl(NULL)
+, _curl(nullptr)
 , _connectionTimeout(0)
-, _delegate(NULL)
+, _delegate(nullptr)
 , _isDownloading(false)
 , _shouldDeleteDelegateWhenExit(false)
 {
@@ -309,9 +309,9 @@ bool AssetsManager::uncompress()
                                   &fileInfo,
                                   fileName,
                                   MAX_FILENAME,
-                                  NULL,
+                                  nullptr,
                                   0,
-                                  NULL,
+                                  nullptr,
                                   0) != UNZ_OK)
         {
             CCLOG("can not read file info");
@@ -434,6 +434,7 @@ bool AssetsManager::uncompress()
     }
     
     CCLOG("end uncompressing");
+    unzClose(zipfile);
     
     return true;
 }
@@ -454,7 +455,7 @@ bool AssetsManager::createDirectory(const char *path)
     
     return true;
 #else
-    BOOL ret = CreateDirectoryA(path, NULL);
+    BOOL ret = CreateDirectoryA(path, nullptr);
 	if (!ret && ERROR_ALREADY_EXISTS != GetLastError())
 	{
 		return false;
@@ -631,7 +632,7 @@ void AssetsManager::createStoragePath()
 {
     // Remove downloaded files
 #if (CC_TARGET_PLATFORM != CC_PLATFORM_WIN32)
-    DIR *dir = NULL;
+    DIR *dir = nullptr;
     
     dir = opendir (_storagePath.c_str());
     if (!dir)

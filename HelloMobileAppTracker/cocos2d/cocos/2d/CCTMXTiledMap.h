@@ -27,9 +27,9 @@ THE SOFTWARE.
 #ifndef __CCTMX_TILE_MAP_H__
 #define __CCTMX_TILE_MAP_H__
 
-#include "CCNode.h"
+#include "2d/CCNode.h"
 #include "CCTMXObjectGroup.h"
-#include "CCValue.h"
+#include "base/CCValue.h"
 
 NS_CC_BEGIN
 
@@ -145,6 +145,11 @@ public:
     Value getPropertiesForGID(int GID) const;
     CC_DEPRECATED_ATTRIBUTE Value propertiesForGID(int GID) const { return getPropertiesForGID(GID); };
 
+    /** Assings properties to argument value, returns true if it did found properties 
+        for that GID and did assinged a value, else it returns false.
+     */
+    bool getPropertiesForGID(int GID, Value** value);
+
     /** the map's size property measured in tiles */
     inline const Size& getMapSize() const { return _mapSize; };
     inline void setMapSize(const Size& mapSize) { _mapSize = mapSize; };
@@ -171,8 +176,8 @@ public:
     };
 
     virtual std::string getDescription() const override;
-
-protected:
+    
+CC_CONSTRUCTOR_ACCESS:
     /**
      * @js ctor
      */
@@ -182,13 +187,14 @@ protected:
      * @lua NA
      */
     virtual ~TMXTiledMap();
-
+    
     /** initializes a TMX Tiled Map with a TMX file */
     bool initWithTMXFile(const std::string& tmxFile);
-
+    
     /** initializes a TMX Tiled Map with a TMX formatted XML string and a path to TMX resources */
     bool initWithXML(const std::string& tmxString, const std::string& resourcePath);
-    
+
+protected:
     TMXLayer * parseLayer(TMXLayerInfo *layerInfo, TMXMapInfo *mapInfo);
     TMXTilesetInfo * tilesetForLayer(TMXLayerInfo *layerInfo, TMXMapInfo *mapInfo);
     void buildWithMapInfo(TMXMapInfo* mapInfo);

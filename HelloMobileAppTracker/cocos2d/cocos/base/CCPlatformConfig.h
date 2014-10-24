@@ -23,8 +23,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ****************************************************************************/
 
-#ifndef __CC_PLATFORM_CONFIG_H__
-#define __CC_PLATFORM_CONFIG_H__
+#ifndef __BASE_CC_PLATFORM_CONFIG_H__
+#define __BASE_CC_PLATFORM_CONFIG_H__
 
 /**
 Config of cocos2d-x project, per target platform.
@@ -48,6 +48,8 @@ Config of cocos2d-x project, per target platform.
 #define CC_PLATFORM_EMSCRIPTEN        10
 #define CC_PLATFORM_TIZEN             11
 #define CC_PLATFORM_QT5               12
+#define CC_PLATFORM_WP8               13
+#define CC_PLATFORM_WINRT             14
 
 // Determine target platform by compile environment macro.
 #define CC_TARGET_PLATFORM             CC_PLATFORM_UNKNOWN
@@ -124,6 +126,19 @@ Config of cocos2d-x project, per target platform.
     #define CC_TARGET_PLATFORM     CC_PLATFORM_QT5
 #endif
 
+// WinRT (Windows Store App)
+#if defined(WINRT)
+    #undef  CC_TARGET_PLATFORM
+    #define CC_TARGET_PLATFORM			CC_PLATFORM_WINRT
+#endif
+
+// WP8 (Windows Phone 8 App)
+#if defined(WP8)
+    #undef  CC_TARGET_PLATFORM
+    #define CC_TARGET_PLATFORM			CC_PLATFORM_WP8
+#endif
+
+
 //////////////////////////////////////////////////////////////////////////
 // post configure
 //////////////////////////////////////////////////////////////////////////
@@ -139,5 +154,5 @@ Config of cocos2d-x project, per target platform.
 #endif 
 #endif  // CC_PLATFORM_WIN32
 
-#endif  // __CC_PLATFORM_CONFIG_H__
+#endif  // __BASE_CC_PLATFORM_CONFIG_H__
 

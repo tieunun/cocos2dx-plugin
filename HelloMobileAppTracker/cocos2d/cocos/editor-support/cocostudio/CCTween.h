@@ -27,12 +27,13 @@ THE SOFTWARE.
 #define __CCTWEEN_H__
 
 #include "cocostudio/CCProcessBase.h"
-#include "cocostudio/CCTweenFunction.h"
+#include "2d/CCTweenFunction.h"
 
 namespace cocostudio {
 
 class Bone;
 class ArmatureAnimation;
+using cocos2d::tweenfunc::TweenType;
 
 /**
  *  @js NA

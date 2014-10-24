@@ -26,9 +26,8 @@ THE SOFTWARE.
 #ifndef __CCRENDER_TEXTURE_H__
 #define __CCRENDER_TEXTURE_H__
 
-#include "CCNode.h"
-#include "CCSprite.h"
-#include "kazmath/mat4.h"
+#include "2d/CCNode.h"
+#include "2d/CCSprite.h"
 #include "platform/CCImage.h"
 #include "renderer/CCGroupCommand.h"
 #include "renderer/CCCustomCommand.h"
@@ -104,12 +103,12 @@ public:
     /** saves the texture into a file using JPEG format. The file will be saved in the Documents folder.
         Returns true if the operation is successful.
      */
-    bool saveToFile(const std::string& filename);
+    bool saveToFile(const std::string& filename, bool isRGBA = true);
 
     /** saves the texture into a file. The format could be JPG or PNG. The file will be saved in the Documents folder.
         Returns true if the operation is successful.
      */
-    bool saveToFile(const std::string& filename, Image::Format format);
+    bool saveToFile(const std::string& filename, Image::Format format, bool isRGBA = true);
     
     /** Listen "come to background" message, and save render texture.
      It only has effect on Android.
@@ -154,8 +153,17 @@ public:
     };
     
     // Overrides
-    virtual void visit() override;
-    virtual void draw() override;
+    virtual void visit(Renderer *renderer, const Mat4 &parentTransform, uint32_t parentFlags) override;
+    virtual void draw(Renderer *renderer, const Mat4 &transform, uint32_t flags) override;
+
+    //flag: use stack matrix computed from scene hierarchy or generate new modelView and projection matrix
+    void setKeepMatrix(bool keepMatrix);
+    /**Used for grab part of screen to a texture. 
+    //rtBegin: the position of renderTexture on the fullRect
+    //fullRect: the total size of screen
+    //fullViewport: the total viewportSize
+    */
+    void setVirtualViewport(const Vec2& rtBegin, const Rect& fullRect, const Rect& fullViewport);
 
 public:
     // XXX should be procted.
@@ -170,7 +178,13 @@ public:
 
 protected:
     virtual void beginWithClear(float r, float g, float b, float a, float depthValue, int stencilValue, GLbitfield flags);
-
+    
+    //flags: whether generate new modelView and projection matrix or not
+    bool         _keepMatrix;
+    Rect         _rtTextureRect;
+    Rect         _fullRect;
+    Rect         _fullviewPort;
+    
     GLuint       _FBO;
     GLuint       _depthRenderBufffer;
     GLint        _oldFBO;
@@ -189,7 +203,7 @@ protected:
     /** The Sprite being used.
      The sprite, by default, will use the following blending function: GL_ONE, GL_ONE_MINUS_SRC_ALPHA.
      The blending function can be changed in runtime by calling:
-     - [[renderTexture sprite] setBlendFunc:(BlendFunc){GL_ONE, GL_ONE_MINUS_SRC_ALPHA}];
+     - renderTexture->getSprite()->setBlendFunc((BlendFunc){GL_ONE, GL_ONE_MINUS_SRC_ALPHA});
      */
     Sprite* _sprite;
     
@@ -199,6 +213,7 @@ protected:
     CustomCommand _clearCommand;
     CustomCommand _beginCommand;
     CustomCommand _endCommand;
+    CustomCommand _saveToFileCommand;
 protected:
     //renderer caches and callbacks
     void onBegin();
@@ -206,9 +221,11 @@ protected:
 
     void onClear();
     void onClearDepth();
+
+    void onSaveToFile(const std::string& fileName, bool isRGBA = true);
     
-    kmMat4 _oldTransMatrix, _oldProjMatrix;
-    kmMat4 _transformMatrix, _projectionMatrix;
+    Mat4 _oldTransMatrix, _oldProjMatrix;
+    Mat4 _transformMatrix, _projectionMatrix;
 private:
     CC_DISALLOW_COPY_AND_ASSIGN(RenderTexture);
 

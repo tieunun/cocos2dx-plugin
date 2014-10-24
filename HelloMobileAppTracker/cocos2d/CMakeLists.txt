@@ -38,37 +38,26 @@ option(USE_CHIPMUNK "Use chipmunk for physics library" ON)
 option(USE_BOX2D "Use box2d for physics library" OFF)
 option(DEBUG_MODE "Debug or release?" ON)
 option(BUILD_LIBS_LUA "Build lua libraries" OFF)
-option(BUILD_GUI "Build GUI library" ON)
-option(BUILD_NETWORK "Build network library" ON)
 option(BUILD_EXTENSIONS "Build extension library" ON)
 option(BUILD_EDITOR_SPINE "Build editor support for spine" ON)
 option(BUILD_EDITOR_COCOSTUDIO "Build editor support for cocostudio" ON)
 option(BUILD_EDITOR_COCOSBUILDER "Build editor support for cocosbuilder" ON)
 
-option(BUILD_HelloCpp "Only build HelloCpp sample" ON)
-option(BUILD_TestCpp "Only build TestCpp sample" ON)
-option(BUILD_HelloLua "Only build HelloLua sample" OFF)
-option(BUILD_TestLua "Only build TestLua sample" OFF)
-
+option(BUILD_CppTests "Only build TestCpp sample" ON)
+option(BUILD_LuaTests "Only build TestLua sample" OFF)
 else()#temp
 
 option(USE_CHIPMUNK "Use chipmunk for physics library" ON)
 option(USE_BOX2D "Use box2d for physics library" OFF)
 option(DEBUG_MODE "Debug or release?" ON)
 option(BUILD_LIBS_LUA "Build lua libraries" ON)
-option(BUILD_GUI "Build GUI library" ON)
-option(BUILD_NETWORK "Build network library" ON)
 option(BUILD_EXTENSIONS "Build extension library" ON)
 option(BUILD_EDITOR_SPINE "Build editor support for spine" ON)
 option(BUILD_EDITOR_COCOSTUDIO "Build editor support for cocostudio" ON)
 option(BUILD_EDITOR_COCOSBUILDER "Build editor support for cocosbuilder" ON)
 
-
-option(BUILD_HelloCpp "Only build HelloCpp sample" ON)
-option(BUILD_TestCpp "Only build TestCpp sample" ON)
-option(BUILD_HelloLua "Only build HelloLua sample" ON)
-option(BUILD_TestLua "Only build TestLua sample" ON)
-
+option(BUILD_CppTests "Only build TestCpp sample" ON)
+option(BUILD_LuaTests "Only build TestLua sample" ON)
 endif()#temp
 
 
@@ -110,6 +99,9 @@ endif()
 
 if(MINGW)
   add_definitions(-DGLEW_STATIC)
+  add_definitions(-D__SSIZE_T)
+  set(CMAKE_C_STANDARD_LIBRARIES "${CMAKE_C_STANDARD_LIBRARIES} -lws2_32")
+  set(CMAKE_CXX_STANDARD_LIBRARIES "${CMAKE_CXX_STANDARD_LIBRARIES} -lws2_32")
 endif()
 
 
@@ -141,31 +133,30 @@ endif()
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/cocos
+  ${CMAKE_CURRENT_SOURCE_DIR}/cocos/platform/desktop
+  ${CMAKE_CURRENT_SOURCE_DIR}/cocos/platform/${PLATFORM_FOLDER}
   ${CMAKE_CURRENT_SOURCE_DIR}/cocos/audio/include
-  ${CMAKE_CURRENT_SOURCE_DIR}/cocos/2d
-  ${CMAKE_CURRENT_SOURCE_DIR}/cocos/2d/renderer
-  ${CMAKE_CURRENT_SOURCE_DIR}/cocos/2d/platform
-  ${CMAKE_CURRENT_SOURCE_DIR}/cocos/base
-  ${CMAKE_CURRENT_SOURCE_DIR}/cocos/physics
   ${CMAKE_CURRENT_SOURCE_DIR}/cocos/editor-support
-  ${CMAKE_CURRENT_SOURCE_DIR}/cocos/math/kazmath/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/cocos/scripting/lua-bindings/auto
+  ${CMAKE_CURRENT_SOURCE_DIR}/cocos/scripting/lua-bindings/manual
   ${CMAKE_CURRENT_SOURCE_DIR}/extensions
   ${CMAKE_CURRENT_SOURCE_DIR}/external
   ${CMAKE_CURRENT_SOURCE_DIR}/external/tinyxml2
   ${CMAKE_CURRENT_SOURCE_DIR}/external/unzip
   ${CMAKE_CURRENT_SOURCE_DIR}/external/edtaa3func
   ${CMAKE_CURRENT_SOURCE_DIR}/external/chipmunk/include/chipmunk
-  ${CMAKE_CURRENT_SOURCE_DIR}/cocos/2d/platform/desktop
-  ${CMAKE_CURRENT_SOURCE_DIR}/cocos/2d/platform/${PLATFORM_FOLDER}
   ${CMAKE_CURRENT_SOURCE_DIR}/external/jpeg/include/${PLATFORM_FOLDER}
   ${CMAKE_CURRENT_SOURCE_DIR}/external/png/include/${PLATFORM_FOLDER}
   ${CMAKE_CURRENT_SOURCE_DIR}/external/tiff/include/${PLATFORM_FOLDER}
   ${CMAKE_CURRENT_SOURCE_DIR}/external/webp/include/${PLATFORM_FOLDER}
   ${CMAKE_CURRENT_SOURCE_DIR}/external/glfw3/include/${PLATFORM_FOLDER}
   ${CMAKE_CURRENT_SOURCE_DIR}/external/freetype2/include/${PLATFORM_FOLDER}
+  ${CMAKE_CURRENT_SOURCE_DIR}/external/websockets/include/${PLATFORM_FOLDER}
+  ${CMAKE_CURRENT_SOURCE_DIR}/external/xxhash
+  ${CMAKE_CURRENT_SOURCE_DIR}/external/xxtea
 )
 
-if(WIN32)
+if(WIN32 AND NOT MINGW)
   include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/external/${PLATFORM_FOLDER}-specific/gles/include/OGLES
     ${CMAKE_CURRENT_SOURCE_DIR}/external/${PLATFORM_FOLDER}-specific/icon/include
@@ -179,6 +170,7 @@ elseif(APPLE)
 else()
   include_directories(
     /usr/include
+    /usr/include/GLFW
     /usr/local/include/GLFW
     ${CMAKE_CURRENT_SOURCE_DIR}/external/${PLATFORM_FOLDER}-specific/fmod/include/${ARCH_DIR}
   )
@@ -210,14 +202,11 @@ else()
     ${CMAKE_CURRENT_SOURCE_DIR}/external/webp/prebuilt/${PLATFORM_FOLDER}/${ARCH_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/external/png/prebuilt/${PLATFORM_FOLDER}/${ARCH_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/external/freetype2/prebuilt/${PLATFORM_FOLDER}/${ARCH_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/external/websockets/prebuilt/${PLATFORM_FOLDER}/${ARCH_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/external/${PLATFORM_FOLDER}-specific/fmod/prebuilt/${ARCH_DIR}
   )
 
 endif()
-
-
-# kazmath
-add_subdirectory(cocos/math/kazmath)
 
 # chipmunk library
 add_subdirectory(external/chipmunk/src)
@@ -231,24 +220,14 @@ add_subdirectory(external/unzip)
 # tinyxml2 library
 add_subdirectory(external/tinyxml2)
 
+# xxhash library
+add_subdirectory(external/xxhash)
+
 # audio
 add_subdirectory(cocos/audio)
 
-# cocos base library
-add_subdirectory(cocos/base)
-
-# cocos 2d library
-add_subdirectory(cocos/2d)
-
-if(BUILD_GUI)
-# gui
-add_subdirectory(cocos/gui)
-endif(BUILD_GUI)
-
-if(BUILD_NETWORK)
-# network
-add_subdirectory(cocos/network)
-endif(BUILD_NETWORK)
+# cocos2d library
+add_subdirectory(cocos)
 
 if(BUILD_EXTENSIONS)
 # extensions
@@ -272,8 +251,8 @@ if(BUILD_EDITOR_COCOSTUDIO)
 add_subdirectory(cocos/editor-support/cocostudio)
 endif(BUILD_EDITOR_COCOSTUDIO)
 
-if(BUILD_LIBS_LUA)
 ## Scripting
+if(BUILD_LIBS_LUA)
 # lua
 add_subdirectory(external/lua/lua)
 
@@ -281,23 +260,21 @@ add_subdirectory(external/lua/lua)
 add_subdirectory(external/lua/tolua)
 
 # luabinding
-add_subdirectory(cocos/scripting)
+add_subdirectory(cocos/scripting/lua-bindings)
+
+# xxtea
+add_subdirectory(external/xxtea)
 endif(BUILD_LIBS_LUA)
 
-# build samples
-if(BUILD_HelloCpp)
-add_subdirectory(samples/Cpp/HelloCpp)
-endif(BUILD_HelloCpp)
+# build tests 
 
-if(BUILD_TestCpp)
-add_subdirectory(samples/Cpp/TestCpp)
-endif(BUILD_TestCpp)
+add_subdirectory(tests/cpp-empty-test)
 
-if(BUILD_HelloLua)
-add_subdirectory(samples/Lua/HelloLua)
-endif(BUILD_HelloLua)
+if(BUILD_CppTests)
+add_subdirectory(tests/cpp-tests)
+endif(BUILD_CppTests)
 
-if(BUILD_TestLua)
-add_subdirectory(samples/Lua/TestLua)
-endif(BUILD_TestLua)
-
+if(BUILD_LuaTests)
+add_subdirectory(tests/lua-tests/project)
+add_subdirectory(tests/lua-empty-test/project)
+endif(BUILD_LuaTests)

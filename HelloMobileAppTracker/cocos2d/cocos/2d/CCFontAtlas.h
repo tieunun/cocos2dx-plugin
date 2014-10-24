@@ -25,15 +25,19 @@
 #ifndef _CCFontAtlas_h_
 #define _CCFontAtlas_h_
 
+#include "base/CCPlatformMacros.h"
+#include "base/CCRef.h"
+#include "CCStdC.h"
+#include <string>
 #include <unordered_map>
-#include "CCPlatformMacros.h"
-#include "CCObject.h"
 
 NS_CC_BEGIN
 
 //fwd
 class Font;
 class Texture2D;
+class EventCustom;
+class EventListenerCustom;
 
 struct FontLetterDefinition
 {
@@ -47,11 +51,16 @@ struct FontLetterDefinition
     int textureID;
     bool validDefinition;
     int xAdvance;
+
+    int clipBottom;
 };
 
-class CC_DLL FontAtlas : public Object
+class CC_DLL FontAtlas : public Ref
 {
 public:
+    static const int CacheTextureWidth;
+    static const int CacheTextureHeight;
+    static const char* EVENT_PURGE_TEXTURES;
     /**
      * @js ctor
      */
@@ -63,21 +72,44 @@ public:
     virtual ~FontAtlas();
     
     void addLetterDefinition(const FontLetterDefinition &letterDefinition);
-    bool getLetterDefinitionForChar(unsigned short  letteCharUTF16, FontLetterDefinition &outDefinition);
+    bool getLetterDefinitionForChar(char16_t letteCharUTF16, FontLetterDefinition &outDefinition);
     
-    bool prepareLetterDefinitions(unsigned short  *utf16String);
+    bool prepareLetterDefinitions(const std::u16string& utf16String);
 
-    void  addTexture(Texture2D &texture, int slot);
+    inline const std::unordered_map<ssize_t, Texture2D*>& getTextures() const{ return _atlasTextures;}
+    void  addTexture(Texture2D *texture, int slot);
     float getCommonLineHeight() const;
     void  setCommonLineHeight(float newHeight);
     
-    Texture2D& getTexture(int slot);
+    Texture2D* getTexture(int slot);
     const Font* getFont() const;
+
+    /** listen the event that renderer was recreated on Android/WP8
+     It only has effect on Android and WP8.
+     */
+    void listenRendererRecreated(EventCustom *event);
     
+    /** Removes textures atlas.
+     It will purge the textures atlas and if multiple texture exist in the FontAtlas.
+     */
+    void purgeTexturesAtlas();
+
+    /** sets font texture parameters:
+     - GL_TEXTURE_MIN_FILTER = GL_LINEAR
+     - GL_TEXTURE_MAG_FILTER = GL_LINEAR
+     */
+     void setAntiAliasTexParameters();
+
+     /** sets font texture parameters:
+     - GL_TEXTURE_MIN_FILTER = GL_NEAREST
+     - GL_TEXTURE_MAG_FILTER = GL_NEAREST
+     */
+     void setAliasTexParameters();
+
 private:
 
     void relaseTextures();
-    std::unordered_map<int, Texture2D*> _atlasTextures;
+    std::unordered_map<ssize_t, Texture2D*> _atlasTextures;
     std::unordered_map<unsigned short, FontLetterDefinition> _fontLetterDefinitions;
     float _commonLineHeight;
     Font * _font;
@@ -88,9 +120,13 @@ private:
     int _currentPageDataSize;
     float _currentPageOrigX;
     float _currentPageOrigY;
-    float _currentPageLineHeight;
     float _letterPadding;
     bool  _makeDistanceMap;
+
+    int _fontAscender;
+    EventListenerCustom* _rendererRecreatedListener;
+    bool _antialiasEnabled;
+    bool _rendererRecreate;
 };
 
 

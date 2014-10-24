@@ -28,24 +28,24 @@
 
 NS_CC_EXT_BEGIN
 
-Invocation* Invocation::create(Object* target, Control::Handler action, Control::EventType controlEvent)
+Invocation* Invocation::create(Ref* target, Control::Handler action, Control::EventType controlEvent)
 {
     Invocation* pRet = new Invocation(target, action, controlEvent);
-    if (pRet != NULL)
+    if (pRet != nullptr)
     {
         pRet->autorelease();
     }
     return pRet;
 }
 
-Invocation::Invocation(Object* target, Control::Handler action, Control::EventType controlEvent)
+Invocation::Invocation(Ref* target, Control::Handler action, Control::EventType controlEvent)
 {
     _target=target;
     _action=action;
     _controlEvent=controlEvent;
 }
 
-void Invocation::invoke(Object* sender)
+void Invocation::invoke(Ref* sender)
 {
     if (_target && _action)
     {

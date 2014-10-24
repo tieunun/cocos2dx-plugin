@@ -25,21 +25,23 @@
 #ifndef __CCPHYSICS_BODY_H__
 #define __CCPHYSICS_BODY_H__
 
-#include "ccConfig.h"
+#include "base/ccConfig.h"
 #if CC_USE_PHYSICS
 
-#include "CCObject.h"
-#include "CCGeometry.h"
-#include "CCPhysicsShape.h"
-#include "CCVector.h"
+#include "base/CCRef.h"
+#include "math/CCGeometry.h"
+#include "physics/CCPhysicsShape.h"
+#include "base/CCVector.h"
 
 NS_CC_BEGIN
+
+class Node;
 class Sprite;
 class PhysicsWorld;
 class PhysicsJoint;
 class PhysicsBodyInfo;
 
-typedef Point Vect;
+typedef Vec2 Vect;
 
 
 const PhysicsMaterial PHYSICSBODY_MATERIAL_DEFAULT(0.1f, 0.5f, 0.5f);
@@ -51,7 +53,7 @@ const PhysicsMaterial PHYSICSBODY_MATERIAL_DEFAULT(0.1f, 0.5f, 0.5f);
  * if you create body with createEdgeXXX, the mass and moment will be PHYSICS_INFINITY by default. and it's a static body.
  * you can change mass and moment with setMass() and setMoment(). and you can change the body to be dynamic or static by use function setDynamic().
  */
-class PhysicsBody : public Object
+class PhysicsBody : public Ref
 {
 public:
     /** create a body with defult mass and moment. */
@@ -61,23 +63,23 @@ public:
     /** create a body with mass and moment. */
     static PhysicsBody* create(float mass, float moment);
     /** Create a body contains a circle shape. */
-    static PhysicsBody* createCircle(float radius, const PhysicsMaterial& material = PHYSICSBODY_MATERIAL_DEFAULT, const Point& offset = Point::ZERO);
+    static PhysicsBody* createCircle(float radius, const PhysicsMaterial& material = PHYSICSBODY_MATERIAL_DEFAULT, const Vec2& offset = Vec2::ZERO);
     /** Create a body contains a box shape. */
-    static PhysicsBody* createBox(const Size& size, const PhysicsMaterial& material = PHYSICSBODY_MATERIAL_DEFAULT, const Point& offset = Point::ZERO);
+    static PhysicsBody* createBox(const Size& size, const PhysicsMaterial& material = PHYSICSBODY_MATERIAL_DEFAULT, const Vec2& offset = Vec2::ZERO);
     /**
      * @brief Create a body contains a polygon shape.
-     * points is an array of Point structs defining a convex hull with a clockwise winding.
+     * points is an array of Vec2 structs defining a convex hull with a clockwise winding.
      */
-    static PhysicsBody* createPolygon(const Point* points, int count, const PhysicsMaterial& material = PHYSICSBODY_MATERIAL_DEFAULT, const Point& offset = Point::ZERO);
+    static PhysicsBody* createPolygon(const Vec2* points, int count, const PhysicsMaterial& material = PHYSICSBODY_MATERIAL_DEFAULT, const Vec2& offset = Vec2::ZERO);
     
     /** Create a body contains a EdgeSegment shape. */
-    static PhysicsBody* createEdgeSegment(const Point& a, const Point& b, const PhysicsMaterial& material = PHYSICSBODY_MATERIAL_DEFAULT, float border = 1);
+    static PhysicsBody* createEdgeSegment(const Vec2& a, const Vec2& b, const PhysicsMaterial& material = PHYSICSBODY_MATERIAL_DEFAULT, float border = 1);
     /** Create a body contains a EdgeBox shape. */
-    static PhysicsBody* createEdgeBox(const Size& size, const PhysicsMaterial& material = PHYSICSBODY_MATERIAL_DEFAULT, float border = 1, const Point& offset = Point::ZERO);
+    static PhysicsBody* createEdgeBox(const Size& size, const PhysicsMaterial& material = PHYSICSBODY_MATERIAL_DEFAULT, float border = 1, const Vec2& offset = Vec2::ZERO);
     /** Create a body contains a EdgePolygon shape. */
-    static PhysicsBody* createEdgePolygon(const Point* points, int count, const PhysicsMaterial& material = PHYSICSBODY_MATERIAL_DEFAULT, float border = 1);
+    static PhysicsBody* createEdgePolygon(const Vec2* points, int count, const PhysicsMaterial& material = PHYSICSBODY_MATERIAL_DEFAULT, float border = 1);
     /** Create a body contains a EdgeChain shape. */
-    static PhysicsBody* createEdgeChain(const Point* points, int count, const PhysicsMaterial& material = PHYSICSBODY_MATERIAL_DEFAULT, float border = 1);
+    static PhysicsBody* createEdgeChain(const Vec2* points, int count, const PhysicsMaterial& material = PHYSICSBODY_MATERIAL_DEFAULT, float border = 1);
     
     /*
      * @brief add a shape to body
@@ -109,26 +111,26 @@ public:
     /** Applies a immediate force to body. */
     virtual void applyForce(const Vect& force);
     /** Applies a immediate force to body. */
-    virtual void applyForce(const Vect& force, const Point& offset);
+    virtual void applyForce(const Vect& force, const Vec2& offset);
     /** reset all the force applied to body. */
     virtual void resetForces();
     /** Applies a continuous force to body. */
     virtual void applyImpulse(const Vect& impulse);
     /** Applies a continuous force to body. */
-    virtual void applyImpulse(const Vect& impulse, const Point& offset);
+    virtual void applyImpulse(const Vect& impulse, const Vec2& offset);
     /** Applies a torque force to body. */
     virtual void applyTorque(float torque);
     
     /** set the velocity of a body */
     virtual void setVelocity(const Vect& velocity);
     /** get the velocity of a body */
-    virtual Point getVelocity();
+    virtual Vec2 getVelocity();
     /** set the angular velocity of a body */
     virtual void setAngularVelocity(float velocity);
     /** get the angular velocity of a body at a local point */
-    virtual Point getVelocityAtLocalPoint(const Point& point);
+    virtual Vec2 getVelocityAtLocalPoint(const Vec2& point);
     /** get the angular velocity of a body at a world point */
-    virtual Point getVelocityAtWorldPoint(const Point& point);
+    virtual Vec2 getVelocityAtWorldPoint(const Vec2& point);
     /** get the angular velocity of a body */
     virtual float getAngularVelocity();
     /** set the max of velocity */
@@ -186,9 +188,18 @@ public:
     inline int getGroup() const { return _group; }
     
     /** get the body position. */
-    Point getPosition() const;
+    Vec2 getPosition() const;
     /** get the body rotation. */
     float getRotation() const;
+    
+    /** set body position offset, it's the position witch relative to node */
+    void setPositionOffset(const Vec2& position);
+    /** get body position offset. */
+    Vec2 getPositionOffset() const;
+    /** set body rotation offset, it's the rotation witch relative to node */
+    void setRotationOffset(float rotation);
+    /** set the body rotation offset */
+    float getRotationOffset() const;
     
     /**
      * @brief test the body is dynamic or not.
@@ -224,7 +235,7 @@ public:
      */
     void setMoment(float moment);
     /** get the body moment of inertia. */
-    inline float getMoment(float moment) const { return _moment; }
+    inline float getMoment() const { return _moment; }
     /**
      * @brief add moment of inertia to body.
      * if _moment(moment of the body) == PHYSICS_INFINITY, it remains.
@@ -241,7 +252,7 @@ public:
      * it is used to simulate fluid or air friction forces on the body. 
      * the value is 0.0f to 1.0f. 
      */
-    inline void setLinearDamping(float damping) { _linearDamping = damping; }
+    inline void setLinearDamping(float damping) { _linearDamping = damping; updateDamping(); }
     /** get angular damping. */
     inline float getAngularDamping() const { return _angularDamping; }
     /**
@@ -249,15 +260,17 @@ public:
      * it is used to simulate fluid or air friction forces on the body.
      * the value is 0.0f to 1.0f.
      */
-    inline void setAngularDamping(float damping) { _angularDamping = damping; }
+    inline void setAngularDamping(float damping) { _angularDamping = damping; updateDamping(); }
     
     /** whether the body is at rest */
     bool isResting() const;
+    /** set body to rest */
+    void setResting(bool rest) const;
     /** 
      * whether the body is enabled
      * if the body it isn't enabled, it will not has simulation by world
      */
-    inline bool isEnabled() const { return _enable; }
+    inline bool isEnabled() const { return _enabled; }
     /**
      * set the enable value.
      * if the body it isn't enabled, it will not has simulation by world
@@ -265,12 +278,12 @@ public:
     void setEnable(bool enable);
     
     /** whether the body can rotation */
-    inline bool isRotationEnabled() const { return _rotationEnable; }
+    inline bool isRotationEnabled() const { return _rotationEnabled; }
     /** set the body is allow rotation or not */
     void setRotationEnable(bool enable);
     
     /** whether this physics body is affected by the physics world’s gravitational force. */
-    inline bool isGravityEnabled() const { return _gravityEnable; }
+    inline bool isGravityEnabled() const { return _gravityEnabled; }
     /** set the body is affected by the physics world's gravitational force or not. */
     void setGravityEnable(bool enable);
     
@@ -280,20 +293,26 @@ public:
     inline void setTag(int tag) { _tag = tag; }
     
     /** convert the world point to local */
-    Point world2Local(const Point& point);
+    Vec2 world2Local(const Vec2& point);
     /** convert the local point to world */
-    Point local2World(const Point& point);
+    Vec2 local2World(const Vec2& point);
     
 protected:
     
     bool init();
     
-    virtual void setPosition(Point position);
+    virtual void setPosition(Vec2 position);
     virtual void setRotation(float rotation);
+    virtual void setScale(float scale);
+    virtual void setScale(float scaleX, float scaleY);
+    virtual void setScaleX(float scaleX);
+    virtual void setScaleY(float scaleY);
     
-    virtual void update(float delta) override;
+    void update(float delta);
     
     void removeJoint(PhysicsJoint* joint);
+    inline void updateDamping() { _isDamping = _linearDamping != 0.0f ||  _angularDamping != 0.0f; }
+    void updateMass(float oldMass, float newMass);
     
 protected:
     PhysicsBody();
@@ -306,15 +325,16 @@ protected:
     PhysicsWorld* _world;
     PhysicsBodyInfo* _info;
     bool _dynamic;
-    bool _enable;
-    bool _rotationEnable;
-    bool _gravityEnable;
+    bool _enabled;
+    bool _rotationEnabled;
+    bool _gravityEnabled;
     bool _massDefault;
     bool _momentDefault;
     float _mass;
     float _area;
     float _density;
     float _moment;
+    bool _isDamping;
     float _linearDamping;
     float _angularDamping;
     int _tag;
@@ -324,10 +344,17 @@ protected:
     int _contactTestBitmask;
     int _group;
     
+    bool _positionResetTag;     /// To avoid reset the body position when body invoke Node::setPosition().
+    bool _rotationResetTag;     /// To avoid reset the body rotation when body invoke Node::setRotation().
+    Vec2 _positionOffset;
+    float _rotationOffset;
+    
     friend class PhysicsWorld;
     friend class PhysicsShape;
     friend class PhysicsJoint;
     friend class Node;
+    friend class Layer;
+    friend class ProtectedNode;
 };
 
 NS_CC_END

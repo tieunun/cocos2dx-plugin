@@ -24,28 +24,27 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ****************************************************************************/
 
-#include "CCConfiguration.h"
-#include "CCRenderTexture.h"
-#include "CCDirector.h"
-#include "platform/CCImage.h"
-#include "CCGLProgram.h"
-#include "ccGLStateCache.h"
-#include "CCConfiguration.h"
-#include "ccUtils.h"
-#include "CCTextureCache.h"
-#include "platform/CCFileUtils.h"
-#include "CCGL.h"
-#include "CCEventType.h"
-#include "CCGrid.h"
+#include "2d/CCRenderTexture.h"
 
+#include "base/ccUtils.h"
+#include "platform/CCImage.h"
+#include "platform/CCFileUtils.h"
+#include "2d/CCGrid.h"
+#include "base/CCEventType.h"
+#include "base/CCConfiguration.h"
+#include "base/CCConfiguration.h"
+#include "base/CCDirector.h"
+#include "base/CCEventListenerCustom.h"
+#include "base/CCEventDispatcher.h"
+#include "renderer/CCGLProgram.h"
+#include "renderer/ccGLStateCache.h"
+#include "renderer/CCTextureCache.h"
 #include "renderer/CCRenderer.h"
 #include "renderer/CCGroupCommand.h"
 #include "renderer/CCCustomCommand.h"
 
-// extern
-#include "kazmath/GL/matrix.h"
-#include "CCEventListenerCustom.h"
-#include "CCEventDispatcher.h"
+#include "CCGL.h"
+
 
 NS_CC_BEGIN
 
@@ -64,6 +63,10 @@ RenderTexture::RenderTexture()
 , _clearStencil(0)
 , _autoDraw(false)
 , _sprite(nullptr)
+, _keepMatrix(false)
+, _rtTextureRect(Rect::ZERO)
+, _fullRect(Rect::ZERO)
+, _fullviewPort(Rect::ZERO)
 {
 #if CC_ENABLE_CACHE_TEXTURE_DATA
     // Listen this event to save render texture before come to background.
@@ -91,6 +94,9 @@ RenderTexture::~RenderTexture()
 
 void RenderTexture::listenToBackground(EventCustom *event)
 {
+    // We have not found a way to dispatch the enter background message before the texture data are destroyed.
+    // So we disable this pair of message handler at present.
+#if 0
 #if CC_ENABLE_CACHE_TEXTURE_DATA
     CC_SAFE_DELETE(_UITextureImage);
     
@@ -115,10 +121,12 @@ void RenderTexture::listenToBackground(EventCustom *event)
     glDeleteFramebuffers(1, &_FBO);
     _FBO = 0;
 #endif
+#endif
 }
 
 void RenderTexture::listenToForeground(EventCustom *event)
 {
+#if 0
 #if CC_ENABLE_CACHE_TEXTURE_DATA
     // -- regenerate frame buffer object and attach the texture
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &_oldFBO);
@@ -135,6 +143,7 @@ void RenderTexture::listenToForeground(EventCustom *event)
     
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _texture->getName(), 0);
     glBindFramebuffer(GL_FRAMEBUFFER, _oldFBO);
+#endif
 #endif
 }
 
@@ -190,9 +199,13 @@ bool RenderTexture::initWithWidthAndHeight(int w, int h, Texture2D::PixelFormat 
     void *data = nullptr;
     do 
     {
+        _fullRect = _rtTextureRect = Rect(0,0,w,h);
+        //Size size = Director::getInstance()->getWinSizeInPixels();
+        //_fullviewPort = Rect(0,0,size.width,size.height);
         w = (int)(w * CC_CONTENT_SCALE_FACTOR());
         h = (int)(h * CC_CONTENT_SCALE_FACTOR());
-
+        _fullviewPort = Rect(0,0,w,h);
+        
         glGetIntegerv(GL_FRAMEBUFFER_BINDING, &_oldFBO);
 
         // textures must be power of two squared
@@ -273,7 +286,7 @@ bool RenderTexture::initWithWidthAndHeight(int w, int h, Texture2D::PixelFormat 
         setSprite(Sprite::createWithTexture(_texture));
 
         _texture->release();
-        _sprite->setScaleY(-1);
+        _sprite->setFlippedY(true);
 
         _sprite->setBlendFunc( BlendFunc::ALPHA_PREMULTIPLIED );
 
@@ -292,6 +305,21 @@ bool RenderTexture::initWithWidthAndHeight(int w, int h, Texture2D::PixelFormat 
     CC_SAFE_FREE(data);
     
     return ret;
+}
+
+void RenderTexture::setKeepMatrix(bool keepMatrix)
+{
+    _keepMatrix = keepMatrix;
+}
+
+void RenderTexture::setVirtualViewport(const Vec2& rtBegin, const Rect& fullRect, const Rect& fullViewport)
+{
+    _rtTextureRect.origin.x = rtBegin.x;
+    _rtTextureRect.origin.y = rtBegin.y;
+
+    _fullRect = fullRect;
+
+    _fullviewPort = fullViewport;
 }
 
 void RenderTexture::beginWithClear(float r, float g, float b, float a)
@@ -361,7 +389,7 @@ void RenderTexture::clearStencil(int stencilValue)
     glClearStencil(stencilClearValue);
 }
 
-void RenderTexture::visit()
+void RenderTexture::visit(Renderer *renderer, const Mat4 &parentTransform, uint32_t parentFlags)
 {
     // override visit.
 	// Don't call visit on its children
@@ -370,47 +398,67 @@ void RenderTexture::visit()
         return;
     }
 	
-	kmGLPushMatrix();
+    uint32_t flags = processParentFlags(parentTransform, parentFlags);
+
+    Director* director = Director::getInstance();
+    // IMPORTANT:
+    // To ease the migration to v3.0, we still support the Mat4 stack,
+    // but it is deprecated and your code should not rely on it
+    director->pushMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_MODELVIEW);
+    director->loadMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_MODELVIEW, _modelViewTransform);
+
+    _sprite->visit(renderer, _modelViewTransform, flags);
+    draw(renderer, _modelViewTransform, flags);
     
-    transform();
-    _sprite->visit();
-    draw();
-    
-	kmGLPopMatrix();
+    director->popMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_MODELVIEW);
 
     _orderOfArrival = 0;
 }
 
-bool RenderTexture::saveToFile(const std::string& filename)
+bool RenderTexture::saveToFile(const std::string& filename, bool isRGBA)
 {
-    bool ret = false;
-
-    Image *image = newImage(true);
-    if (image)
+    std::string basename(filename);
+    std::transform(basename.begin(), basename.end(), basename.begin(), ::tolower);
+    
+    if (basename.find(".png") != std::string::npos)
     {
-        ret = image->saveToFile(filename);
+        return saveToFile(filename, Image::Format::PNG, isRGBA);
     }
-
-    CC_SAFE_DELETE(image);
-    return ret;
+    else if (basename.find(".jpg") != std::string::npos)
+    {
+        if (isRGBA) CCLOG("RGBA is not supported for JPG format.");
+        return saveToFile(filename, Image::Format::JPG, false);
+    }
+    else
+    {
+        CCLOG("Only PNG and JPG format are supported now!");
+    }
+    
+    return saveToFile(filename, Image::Format::JPG, false);
 }
-bool RenderTexture::saveToFile(const std::string& fileName, Image::Format format)
+bool RenderTexture::saveToFile(const std::string& fileName, Image::Format format, bool isRGBA)
 {
-    bool ret = false;
     CCASSERT(format == Image::Format::JPG || format == Image::Format::PNG,
              "the image can only be saved as JPG or PNG format");
+    if (isRGBA && format == Image::Format::JPG) CCLOG("RGBA is not supported for JPG format");
+    
+    std::string fullpath = FileUtils::getInstance()->getWritablePath() + fileName;
+    _saveToFileCommand.init(_globalZOrder);
+    _saveToFileCommand.func = CC_CALLBACK_0(RenderTexture::onSaveToFile, this, fullpath, isRGBA);
+    
+    Director::getInstance()->getRenderer()->addCommand(&_saveToFileCommand);
+    return true;
+}
 
+void RenderTexture::onSaveToFile(const std::string& filename, bool isRGBA)
+{
     Image *image = newImage(true);
     if (image)
     {
-        std::string fullpath = FileUtils::getInstance()->getWritablePath() + fileName;
-        
-        ret = image->saveToFile(fullpath.c_str(), true);
+        image->saveToFile(filename.c_str(), !isRGBA);
     }
 
     CC_SAFE_DELETE(image);
-
-    return ret;
 }
 
 /* get buffer as Image */
@@ -446,10 +494,23 @@ Image* RenderTexture::newImage(bool fliimage)
             break;
         }
 
-        this->begin();
+        glGetIntegerv(GL_FRAMEBUFFER_BINDING, &_oldFBO);
+        glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
+
+        //TODO move this to configration, so we don't check it every time
+        /*  Certain Qualcomm Andreno gpu's will retain data in memory after a frame buffer switch which corrupts the render to the texture. The solution is to clear the frame buffer before rendering to the texture. However, calling glClear has the unintended result of clearing the current texture. Create a temporary texture to overcome this. At the end of RenderTexture::begin(), switch the attached texture to the second one, call glClear, and then switch back to the original texture. This solution is unnecessary for other devices as they don't have the same issue with switching frame buffers.
+         */
+        if (Configuration::getInstance()->checkForGLExtension("GL_QCOM"))
+        {
+            // -- bind a temporary texture so we can clear the render buffer without losing our texture
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _textureCopy->getName(), 0);
+            CHECK_GL_ERROR_DEBUG();
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _texture->getName(), 0);
+        }
         glPixelStorei(GL_PACK_ALIGNMENT, 1);
         glReadPixels(0,0,savedBufferWidth, savedBufferHeight,GL_RGBA,GL_UNSIGNED_BYTE, tempData);
-        this->end();
+        glBindFramebuffer(GL_FRAMEBUFFER, _oldFBO);
 
         if ( fliimage ) // -- flip is only required when saving image to file
         {
@@ -480,33 +541,59 @@ Image* RenderTexture::newImage(bool fliimage)
 void RenderTexture::onBegin()
 {
     //
-    kmGLGetMatrix(KM_GL_PROJECTION, &_oldProjMatrix);
-    kmGLMatrixMode(KM_GL_PROJECTION);
-    kmGLLoadMatrix(&_projectionMatrix);
-
-    kmGLGetMatrix(KM_GL_MODELVIEW, &_oldTransMatrix);
-    kmGLMatrixMode(KM_GL_MODELVIEW);
-    kmGLLoadMatrix(&_transformMatrix);
-
     Director *director = Director::getInstance();
-    director->setProjection(director->getProjection());
+    
+    _oldProjMatrix = director->getMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_PROJECTION);
+    director->loadMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_PROJECTION, _projectionMatrix);
+    
+    _oldTransMatrix = director->getMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_MODELVIEW);
+    director->loadMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_MODELVIEW, _transformMatrix);
+    
+    if(!_keepMatrix)
+    {
+        director->setProjection(director->getProjection());
 
-    const Size& texSize = _texture->getContentSizeInPixels();
+#if CC_TARGET_PLATFORM == CC_PLATFORM_WP8
+        Mat4 modifiedProjection = director->getMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_PROJECTION);
+        modifiedProjection = CCEGLView::sharedOpenGLView()->getReverseOrientationMatrix() * modifiedProjection;
+        director->loadMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_PROJECTION,modifiedProjection);
+#endif
 
-    // Calculate the adjustment ratios based on the old and new projections
-    Size size = director->getWinSizeInPixels();
-    float widthRatio = size.width / texSize.width;
-    float heightRatio = size.height / texSize.height;
+        const Size& texSize = _texture->getContentSizeInPixels();
+        
+        // Calculate the adjustment ratios based on the old and new projections
+        Size size = director->getWinSizeInPixels();
+        float widthRatio = size.width / texSize.width;
+        float heightRatio = size.height / texSize.height;
+        
+        Mat4 orthoMatrix;
+        Mat4::createOrthographicOffCenter((float)-1.0 / widthRatio, (float)1.0 / widthRatio, (float)-1.0 / heightRatio, (float)1.0 / heightRatio, -1, 1, &orthoMatrix);
+        director->multiplyMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_PROJECTION, orthoMatrix);
+    }
+    else
+    {
+#if CC_TARGET_PLATFORM == CC_PLATFORM_WP8
+        Mat4 modifiedProjection = director->getMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_PROJECTION);
+        modifiedProjection = CCEGLView::sharedOpenGLView()->getReverseOrientationMatrix() * modifiedProjection;
+        director->loadMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_PROJECTION, modifiedProjection);
+#endif
+    }
+    
+    //calculate viewport
+    {
+        Rect viewport;
+        viewport.size.width = _fullviewPort.size.width;
+        viewport.size.height = _fullviewPort.size.height;
+        float viewPortRectWidthRatio = float(viewport.size.width)/_fullRect.size.width;
+        float viewPortRectHeightRatio = float(viewport.size.height)/_fullRect.size.height;
+        viewport.origin.x = (_fullRect.origin.x - _rtTextureRect.origin.x) * viewPortRectWidthRatio;
+        viewport.origin.y = (_fullRect.origin.y - _rtTextureRect.origin.y) * viewPortRectHeightRatio;
+        //glViewport(_fullviewPort.origin.x, _fullviewPort.origin.y, (GLsizei)_fullviewPort.size.width, (GLsizei)_fullviewPort.size.height);
+        glViewport(viewport.origin.x, viewport.origin.y, (GLsizei)viewport.size.width, (GLsizei)viewport.size.height);
+    }
 
     // Adjust the orthographic projection and viewport
-    glViewport(0, 0, (GLsizei)size.width, (GLsizei)size.height);
-
-
-    kmMat4 orthoMatrix;
-    kmMat4OrthographicProjection(&orthoMatrix, (float)-1.0 / widthRatio,  (float)1.0 / widthRatio,
-            (float)-1.0 / heightRatio, (float)1.0 / heightRatio, -1,1 );
-    kmGLMultMatrix(&orthoMatrix);
-
+    
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &_oldFBO);
     glBindFramebuffer(GL_FRAMEBUFFER, _FBO);
 
@@ -531,13 +618,10 @@ void RenderTexture::onEnd()
 
     // restore viewport
     director->setViewport();
-
     //
-    kmGLMatrixMode(KM_GL_PROJECTION);
-    kmGLLoadMatrix(&_oldProjMatrix);
+    director->loadMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_PROJECTION, _oldProjMatrix);
+    director->loadMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_MODELVIEW, _oldTransMatrix);
 
-    kmGLMatrixMode(KM_GL_MODELVIEW);
-    kmGLLoadMatrix(&_oldTransMatrix);
 }
 
 void RenderTexture::onClear()
@@ -597,7 +681,7 @@ void RenderTexture::onClearDepth()
     glClearDepth(depthClearValue);
 }
 
-void RenderTexture::draw()
+void RenderTexture::draw(Renderer *renderer, const Mat4 &transform, uint32_t flags)
 {
     if (_autoDraw)
     {
@@ -607,7 +691,7 @@ void RenderTexture::draw()
         //clear screen
         _clearCommand.init(_globalZOrder);
         _clearCommand.func = CC_CALLBACK_0(RenderTexture::onClear, this);
-        Director::getInstance()->getRenderer()->addCommand(&_clearCommand);
+        renderer->addCommand(&_clearCommand);
 
         //! make sure all children are drawn
         sortAllChildren();
@@ -615,7 +699,7 @@ void RenderTexture::draw()
         for(const auto &child: _children)
         {
             if (child != _sprite)
-                child->visit();
+                child->visit(renderer, transform, flags);
         }
 
         //End will pop the current render group
@@ -625,28 +709,31 @@ void RenderTexture::draw()
 
 void RenderTexture::begin()
 {
-    kmGLMatrixMode(KM_GL_PROJECTION);
-    kmGLPushMatrix();
-    kmGLGetMatrix(KM_GL_PROJECTION, &_projectionMatrix);
-
-    kmGLMatrixMode(KM_GL_MODELVIEW);
-    kmGLPushMatrix();
-    kmGLGetMatrix(KM_GL_MODELVIEW, &_transformMatrix);
+    Director* director = Director::getInstance();
+    CCASSERT(nullptr != director, "Director is null when seting matrix stack");
     
-    Director *director = Director::getInstance();
-    director->setProjection(director->getProjection());
+    director->pushMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_PROJECTION);
+    _projectionMatrix = director->getMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_PROJECTION);
     
-    const Size& texSize = _texture->getContentSizeInPixels();
+    director->pushMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_MODELVIEW);
+    _transformMatrix = director->getMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_MODELVIEW);
     
-    // Calculate the adjustment ratios based on the old and new projections
-    Size size = director->getWinSizeInPixels();
-    float widthRatio = size.width / texSize.width;
-    float heightRatio = size.height / texSize.height;
-    
-    kmMat4 orthoMatrix;
-    kmMat4OrthographicProjection(&orthoMatrix, (float)-1.0 / widthRatio,  (float)1.0 / widthRatio,
-                                 (float)-1.0 / heightRatio, (float)1.0 / heightRatio, -1,1 );
-    kmGLMultMatrix(&orthoMatrix);
+    if(!_keepMatrix)
+    {
+        director->setProjection(director->getProjection());
+        
+        const Size& texSize = _texture->getContentSizeInPixels();
+        
+        // Calculate the adjustment ratios based on the old and new projections
+        Size size = director->getWinSizeInPixels();
+        
+        float widthRatio = size.width / texSize.width;
+        float heightRatio = size.height / texSize.height;
+        
+        Mat4 orthoMatrix;
+        Mat4::createOrthographicOffCenter((float)-1.0 / widthRatio, (float)1.0 / widthRatio, (float)-1.0 / heightRatio, (float)1.0 / heightRatio, -1, 1, &orthoMatrix);
+        director->multiplyMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_PROJECTION, orthoMatrix);
+    }
 
     _groupCommand.init(_globalZOrder);
 
@@ -665,15 +752,16 @@ void RenderTexture::end()
     _endCommand.init(_globalZOrder);
     _endCommand.func = CC_CALLBACK_0(RenderTexture::onEnd, this);
 
-    Renderer *renderer = Director::getInstance()->getRenderer();
+    Director* director = Director::getInstance();
+    CCASSERT(nullptr != director, "Director is null when seting matrix stack");
+    
+    Renderer *renderer = director->getRenderer();
     renderer->addCommand(&_endCommand);
     renderer->popGroup();
     
-    kmGLMatrixMode(KM_GL_PROJECTION);
-    kmGLPopMatrix();
-    
-    kmGLMatrixMode(KM_GL_MODELVIEW);
-    kmGLPopMatrix();
+    director->popMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_PROJECTION);
+    director->popMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_MODELVIEW);
+
 }
 
 NS_CC_END

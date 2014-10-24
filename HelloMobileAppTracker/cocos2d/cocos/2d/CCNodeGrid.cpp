@@ -22,8 +22,8 @@
  THE SOFTWARE.
  ****************************************************************************/
 
-#include "CCNodeGrid.h"
-#include "CCGrid.h"
+#include "2d/CCNodeGrid.h"
+#include "2d/CCGrid.h"
 
 #include "renderer/CCGroupCommand.h"
 #include "renderer/CCRenderer.h"
@@ -82,7 +82,7 @@ void NodeGrid::onGridEndDraw()
     }
 }
 
-void NodeGrid::visit()
+void NodeGrid::visit(Renderer *renderer, const Mat4 &parentTransform, uint32_t parentFlags)
 {
     // quick return if not visible. children won't be drawn.
     if (!_visible)
@@ -90,14 +90,25 @@ void NodeGrid::visit()
         return;
     }
     
-    Renderer* renderer = Director::getInstance()->getRenderer();
-
     _groupCommand.init(_globalZOrder);
     renderer->addCommand(&_groupCommand);
     renderer->pushGroup(_groupCommand.getRenderQueueID());
 
-    kmGLPushMatrix();
-    Director::Projection beforeProjectionType;
+    bool dirty = (parentFlags & FLAGS_TRANSFORM_DIRTY) || _transformUpdated;
+    if(dirty)
+        _modelViewTransform = this->transform(parentTransform);
+    _transformUpdated = false;
+
+    // IMPORTANT:
+    // To ease the migration to v3.0, we still support the Mat4 stack,
+    // but it is deprecated and your code should not rely on it
+    Director* director = Director::getInstance();
+    CCASSERT(nullptr != director, "Director is null when seting matrix stack");
+    
+    director->pushMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_MODELVIEW);
+    director->loadMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_MODELVIEW, _modelViewTransform);
+
+    Director::Projection beforeProjectionType = Director::Projection::DEFAULT;
     if(_nodeGrid && _nodeGrid->isActive())
     {
         beforeProjectionType = Director::getInstance()->getProjection();
@@ -108,11 +119,10 @@ void NodeGrid::visit()
     _gridBeginCommand.func = CC_CALLBACK_0(NodeGrid::onGridBeginDraw, this);
     renderer->addCommand(&_gridBeginCommand);
 
-    this->transform();
-    
+
     if(_gridTarget)
     {
-        _gridTarget->visit();
+        _gridTarget->visit(renderer, _modelViewTransform, dirty);
     }
     
     int i = 0;
@@ -126,20 +136,20 @@ void NodeGrid::visit()
             auto node = _children.at(i);
 
             if ( node && node->getLocalZOrder() < 0 )
-                node->visit();
+                node->visit(renderer, _modelViewTransform, dirty);
             else
                 break;
         }
         // self draw,currently we have nothing to draw on NodeGrid, so there is no need to add render command
-        this->draw();
+        this->draw(renderer, _modelViewTransform, dirty);
 
         for(auto it=_children.cbegin()+i; it != _children.cend(); ++it) {
-            (*it)->visit();
+            (*it)->visit(renderer, _modelViewTransform, dirty);
         }
     }
     else
     {
-        this->draw();
+        this->draw(renderer, _modelViewTransform, dirty);
     }
     
     // reset for next frame
@@ -148,7 +158,6 @@ void NodeGrid::visit()
     if(_nodeGrid && _nodeGrid->isActive())
     {
         // restore projection
-        Director *director = Director::getInstance();
         director->setProjection(beforeProjectionType);
     }
 
@@ -158,7 +167,7 @@ void NodeGrid::visit()
 
     renderer->popGroup();
  
-    kmGLPopMatrix();
+    director->popMatrix(MATRIX_STACK_TYPE::MATRIX_STACK_MODELVIEW);
 }
 
 void NodeGrid::setGrid(GridBase *grid)

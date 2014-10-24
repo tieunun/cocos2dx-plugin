@@ -28,7 +28,7 @@
 #ifndef __MISCNODE_CCCLIPPING_NODE_H__
 #define __MISCNODE_CCCLIPPING_NODE_H__
 
-#include "CCNode.h"
+#include "2d/CCNode.h"
 #include "CCGL.h"
 #include "renderer/CCGroupCommand.h"
 #include "renderer/CCCustomCommand.h"
@@ -95,11 +95,11 @@ public:
      * @lua NA
      */
     virtual void onExit() override;
-    virtual void visit() override;
-
-protected:
+    virtual void visit(Renderer *renderer, const Mat4 &parentTransform, uint32_t parentFlags) override;
+    
+CC_CONSTRUCTOR_ACCESS:
     ClippingNode();
-
+    
     /**
      * @js NA
      * @lua NA
@@ -109,12 +109,13 @@ protected:
     /** Initializes a clipping node without a stencil.
      */
     virtual bool init();
-
+    
     /** Initializes a clipping node with an other node as its stencil.
      The stencil node will be retained, and its parent will be set to this clipping node.
      */
     virtual bool init(Node *stencil);
 
+protected:
     /**draw fullscreen quad to clear stencil bits
     */
     void drawFullScreenQuadClearStencil();
@@ -122,7 +123,7 @@ protected:
     Node* _stencil;
     GLfloat _alphaThreshold;
     bool    _inverted;
-protected:
+
     //renderData and callback
     void onBeforeVisit();
     void onAfterDrawStencil();

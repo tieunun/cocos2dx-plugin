@@ -29,12 +29,14 @@ THE SOFTWARE.
 #include "cocostudio/DictionaryHelper.h"
 
 namespace cocostudio {
-
+    
+class CocoLoader;
+struct stExpCocoNode;
 /**
 *  @js NA
 *  @lua NA
 */
-class ActionNode:public cocos2d::Object
+class ActionNode : public cocos2d::Ref
 {
 public:
 
@@ -79,14 +81,14 @@ public:
 	*
 	* @param  node which will run a action
 	*/
-	void setObject(cocos2d::Object* node);
+	void setObject(cocos2d::Ref* node);
 
 	/**
 	* Gets node which will run a action.
 	*
 	* @return  node which will run a action
 	*/
-	cocos2d::Object* getObject();
+	cocos2d::Ref* getObject();
 
 	/**
 	* Insets a ActionFrame to ActionNode.
@@ -148,7 +150,8 @@ public:
 	virtual void stopAction();
 
 	/*init properties with a json dictionary*/
-	virtual void initWithDictionary(const rapidjson::Value& dic,Object* root);
+	virtual void initWithDictionary(const rapidjson::Value& dic, cocos2d::Ref* root);
+    virtual void initWithBinary(CocoLoader* cocoLoader, stExpCocoNode*	pCocoNode, Ref* root);
 
 	/**
 	* Gets if the action is done once time.
@@ -157,6 +160,10 @@ public:
 	*/
 	virtual bool isActionDoneOnce();
 protected:
+    int valueToInt(const std::string& value);
+    bool valueToBool(const std::string& value);
+    float valueToFloat(const std::string& value);
+    
 	int _currentFrameIndex;
 	int _destFrameIndex;
 
@@ -165,7 +172,7 @@ protected:
 	int _actionTag;
 	cocos2d::Spawn * _actionSpawn;
 	cocos2d::Action* _action;
-	cocos2d::Object* _object;
+	cocos2d::Ref* _object;
 
 	std::vector<cocos2d::Vector<ActionFrame*>*> _frameArray;
 	int _frameArrayNum;
@@ -174,7 +181,7 @@ protected:
 	virtual cocos2d::Node* getActionNode();
 	virtual cocos2d::Spawn * refreshActionProperty();
 	virtual void runAction();
-	virtual void initActionNodeFromRoot(cocos2d::Object* root);
+	virtual void initActionNodeFromRoot(cocos2d::Ref* root);
 	virtual void easingToFrame(float duration,float delayTime,ActionFrame* srcFrame,ActionFrame* destFrame);
 };
 

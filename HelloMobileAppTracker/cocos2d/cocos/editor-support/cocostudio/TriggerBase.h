@@ -27,22 +27,24 @@ THE SOFTWARE.
 
 #include "cocos2d.h"
 #include "cocostudio/CocoStudio.h"
-#include "ObjectFactory.h"
+#include "base/ObjectFactory.h"
 #include "TriggerObj.h"
 #include "TriggerMng.h"
 
 
 #define DECLARE_CLASS_INFO \
     public: \
-        static cocostudio::ObjectFactory::TInfo Type; \
-        static cocos2d::Object* createInstance(void); \
+        static cocos2d::ObjectFactory::TInfo Type; \
+        static cocos2d::Ref* createInstance(void); \
         
 #define IMPLEMENT_CLASS_INFO(className) \
-        cocos2d::Object* className::createInstance(void) \
+        cocos2d::Ref* className::createInstance(void) \
         { \
-            return new className; \
+            auto ret = new className; \
+            ret->autorelease(); \
+            return ret; \
         } \
-        cocostudio::ObjectFactory::TInfo className::Type(#className, &className::createInstance); \
+        cocos2d::ObjectFactory::TInfo className::Type(#className, &className::createInstance); \
 
 
 void sendEvent(unsigned int event);

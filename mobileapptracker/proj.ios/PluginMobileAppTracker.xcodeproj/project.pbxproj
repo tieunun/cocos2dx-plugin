@@ -15,7 +15,7 @@
 		F86D33AE183D8E91008E5BF8 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F86D33AD183D8E91008E5BF8 /* Foundation.framework */; };
 		F86D33B3183D8E91008E5BF8 /* PluginMobileAppTracker.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = F86D33B2183D8E91008E5BF8 /* PluginMobileAppTracker.h */; };
 		F86D33B5183D8E91008E5BF8 /* PluginMobileAppTracker.m in Sources */ = {isa = PBXBuildFile; fileRef = F86D33B4183D8E91008E5BF8 /* PluginMobileAppTracker.m */; };
-		F8AC61301911A22100BFA6CE /* MobileAppTracker-3.2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F8AC612F1911A22100BFA6CE /* MobileAppTracker-3.2.a */; };
+		F89CA8C019DE390D008162A3 /* MobileAppTracker-3.5.3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F89CA8BF19DE390D008162A3 /* MobileAppTracker-3.5.3.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -44,7 +44,7 @@
 		F86D33B2183D8E91008E5BF8 /* PluginMobileAppTracker.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PluginMobileAppTracker.h; sourceTree = "<group>"; };
 		F86D33B4183D8E91008E5BF8 /* PluginMobileAppTracker.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PluginMobileAppTracker.m; sourceTree = "<group>"; };
 		F86D33D4183D8F4A008E5BF8 /* MobileAppTracker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MobileAppTracker.h; sourceTree = "<group>"; };
-		F8AC612F1911A22100BFA6CE /* MobileAppTracker-3.2.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "MobileAppTracker-3.2.a"; sourceTree = "<group>"; };
+		F89CA8BF19DE390D008162A3 /* MobileAppTracker-3.5.3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "MobileAppTracker-3.5.3.a"; sourceTree = "<group>"; };
 		F8DAEB611900A2B800E0322F /* MATEventItem.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MATEventItem.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -55,11 +55,11 @@
 			files = (
 				F838159F1857A63600E5E257 /* libPluginProtocol.a in Frameworks */,
 				F8545188183ED607002EE2CF /* AdSupport.framework in Frameworks */,
+				F89CA8C019DE390D008162A3 /* MobileAppTracker-3.5.3.a in Frameworks */,
 				F8545189183ED607002EE2CF /* CoreTelephony.framework in Frameworks */,
 				F854518A183ED607002EE2CF /* MobileCoreServices.framework in Frameworks */,
 				F854518B183ED607002EE2CF /* SystemConfiguration.framework in Frameworks */,
 				F86D33AE183D8E91008E5BF8 /* Foundation.framework in Frameworks */,
-				F8AC61301911A22100BFA6CE /* MobileAppTracker-3.2.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -91,7 +91,7 @@
 		F86D33AC183D8E91008E5BF8 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				F8AC612F1911A22100BFA6CE /* MobileAppTracker-3.2.a */,
+				F89CA8BF19DE390D008162A3 /* MobileAppTracker-3.5.3.a */,
 				F838159E1857A63600E5E257 /* libPluginProtocol.a */,
 				F8545184183ED607002EE2CF /* AdSupport.framework */,
 				F8545185183ED607002EE2CF /* CoreTelephony.framework */,
@@ -128,7 +128,7 @@
 		F86D33A2183D8E91008E5BF8 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0510;
+				LastUpgradeCheck = 0600;
 				ORGANIZATIONNAME = "HasOffers Inc";
 			};
 			buildConfigurationList = F86D33A5183D8E91008E5BF8 /* Build configuration list for PBXProject "PluginMobileAppTracker" */;
@@ -164,11 +164,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = (
-					"$(ARCHS_STANDARD)",
-					x86_64,
-					i386,
-				);
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
@@ -201,7 +196,7 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(SRCROOT)/../../../protocols/platform/ios",
 				);
-				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 5.1.1;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/../platform/ios\"",
@@ -217,11 +212,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = (
-					"$(ARCHS_STANDARD)",
-					x86_64,
-					i386,
-				);
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
@@ -248,7 +238,7 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(SRCROOT)/../../../protocols/platform/ios",
 				);
-				IPHONEOS_DEPLOYMENT_TARGET = 5.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 5.1.1;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"\"$(SRCROOT)/../platform/ios\"",
@@ -263,7 +253,6 @@
 		F86D33CE183D8E91008E5BF8 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD)";
 				DSTROOT = /tmp/PluginMobileAppTracker.dst;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PluginMobileAppTracker-Prefix.pch";
@@ -283,7 +272,6 @@
 		F86D33CF183D8E91008E5BF8 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD)";
 				DSTROOT = /tmp/PluginMobileAppTracker.dst;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "PluginMobileAppTracker-Prefix.pch";

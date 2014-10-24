@@ -22,8 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ****************************************************************************/
 
-#include "CCActionFrame.h"
-#include "CCActionEaseEx.h"
+#include "cocostudio/CCActionFrame.h"
+#include "2d/CCActionEase.h"
 
 using namespace cocos2d;
 
@@ -221,7 +221,7 @@ ActionInterval* ActionFrame::getEasingAction(ActionInterval* action)
 //////////////////////////////////////////////////////////////////////////
 
 ActionMoveFrame::ActionMoveFrame()
-	: _position(Point(0.0f,0.0f))
+	: _position(Vec2(0.0f,0.0f))
 {
 	_frameType = (int)kKeyframeMove;
 }
@@ -229,17 +229,17 @@ ActionMoveFrame::~ActionMoveFrame()
 {
 
 }
-void ActionMoveFrame::setPosition(Point pos)
+void ActionMoveFrame::setPosition(Vec2 pos)
 {
 	_position = pos;
 }
-Point ActionMoveFrame::getPosition()
+Vec2 ActionMoveFrame::getPosition()
 {
 	return _position;
 }
 ActionInterval* ActionMoveFrame::getAction(float fDuration)
 {
-	return this->getEasingAction(CCMoveTo::create(fDuration,_position));
+	return this->getEasingAction(MoveTo::create(fDuration,_position));
 }
 //////////////////////////////////////////////////////////////////////////
 
@@ -277,7 +277,7 @@ float ActionScaleFrame::getScaleY()
 
 ActionInterval* ActionScaleFrame::getAction(float fDuration)
 {
-	return this->getEasingAction(CCScaleTo::create(fDuration,_scaleX,_scaleY));
+	return this->getEasingAction(ScaleTo::create(fDuration,_scaleX,_scaleY));
 }
 
 ActionRotationFrame::ActionRotationFrame()
@@ -303,7 +303,7 @@ float ActionRotationFrame::getRotation()
 
 ActionInterval* ActionRotationFrame::getAction(float fDuration)
 {
-	return this->getEasingAction(CCRotateTo::create(fDuration,_rotation));
+	return this->getEasingAction(RotateTo::create(fDuration,_rotation));
 }
 ActionInterval* ActionRotationFrame::getAction(float fDuration,ActionFrame* srcFrame)
 {
@@ -315,7 +315,7 @@ ActionInterval* ActionRotationFrame::getAction(float fDuration,ActionFrame* srcF
 	else
 	{
 		float diffRotation = _rotation - srcRotationFrame->_rotation;
-		return this->getEasingAction(CCRotateBy::create(fDuration,diffRotation));
+		return this->getEasingAction(RotateBy::create(fDuration,diffRotation));
 	}
 }
 
@@ -342,7 +342,7 @@ int ActionFadeFrame::getOpacity()
 
 ActionInterval* ActionFadeFrame::getAction(float fDuration)
 {
-	return this->getEasingAction(CCFadeTo::create(fDuration,_opacity));
+	return this->getEasingAction(FadeTo::create(fDuration,_opacity));
 }
 
 
@@ -369,7 +369,7 @@ Color3B ActionTintFrame::getColor()
 
 ActionInterval* ActionTintFrame::getAction(float fDuration)
 {
-	return this->getEasingAction(CCTintTo::create(fDuration,_color.r,_color.g,_color.b));
+	return this->getEasingAction(TintTo::create(fDuration,_color.r,_color.g,_color.b));
 }
 
 

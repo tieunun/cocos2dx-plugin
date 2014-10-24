@@ -26,10 +26,10 @@ THE SOFTWARE.
 #ifndef __CCMOTION_STREAK_H__
 #define __CCMOTION_STREAK_H__
 
-#include "CCProtocols.h"
-#include "CCTexture2D.h"
-#include "ccTypes.h"
-#include "CCNode.h"
+#include "base/CCProtocols.h"
+#include "renderer/CCTexture2D.h"
+#include "base/ccTypes.h"
+#include "2d/CCNode.h"
 #include "renderer/CCCustomCommand.h"
 #ifdef EMSCRIPTEN
 #include "CCGLBufferedNode.h"
@@ -68,17 +68,24 @@ public:
 
     inline bool isStartingPositionInitialized() const { return _startingPositionInitialized; }
     inline void setStartingPositionInitialized(bool bStartingPositionInitialized) 
-    { 
+    {
         _startingPositionInitialized = bStartingPositionInitialized; 
     }
 
     // Overrides
-    virtual void setPosition(const Point& position) override;
+    virtual void setPosition(const Vec2& position) override;
+    virtual void setPosition(float x, float y) override;
+    virtual const Vec2& getPosition() const override;
+    virtual void getPosition(float* x, float* y) const override;
+    virtual void setPositionX(float x) override;
+    virtual void setPositionY(float y) override;
+    virtual float getPositionX(void) const override;
+    virtual float getPositionY(void) const override;
     /**
     * @js NA
     * @lua NA
     */
-    virtual void draw() override;
+    virtual void draw(Renderer *renderer, const Mat4 &transform, uint32_t flags) override;
     /**
     * @js NA
     * @lua NA
@@ -100,27 +107,20 @@ public:
     virtual void setOpacity(GLubyte opacity) override;
     virtual void setOpacityModifyRGB(bool value) override;
     virtual bool isOpacityModifyRGB() const override;
-
-protected:
-    kmMat4 _cachedMV;
-    //renderer callback
-    void onDraw();
-
-protected:
-    /**
-     * @js ctor
-     */
+    
+CC_CONSTRUCTOR_ACCESS:
     MotionStreak();
-    /**
-     * @js NA
-     * @lua NA
-     */
     virtual ~MotionStreak();
-
+    
     /** initializes a motion streak with fade in seconds, minimum segments, stroke's width, color and texture filename */
     bool initWithFade(float fade, float minSeg, float stroke, const Color3B& color, const std::string& path);
+    
     /** initializes a motion streak with fade in seconds, minimum segments, stroke's width, color and texture  */
     bool initWithFade(float fade, float minSeg, float stroke, const Color3B& color, Texture2D* texture);
+
+protected:
+    //renderer callback
+    void onDraw(const Mat4 &transform, uint32_t flags);
 
     bool _fastMode;
     bool _startingPositionInitialized;
@@ -128,7 +128,7 @@ protected:
     /** texture used for the motion streak */
     Texture2D* _texture;
     BlendFunc _blendFunc;
-    Point _positionR;
+    Vec2 _positionR;
 
     float _stroke;
     float _fadeDelta;
@@ -139,11 +139,11 @@ protected:
     unsigned int _previousNuPoints;
 
     /** Pointers */
-    Point* _pointVertexes;
+    Vec2* _pointVertexes;
     float* _pointState;
 
     // Opengl
-    Vertex2F* _vertices;
+    Vec2* _vertices;
     GLubyte* _colorPointer;
     Tex2F* _texCoords;
     

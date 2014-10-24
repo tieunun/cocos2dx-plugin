@@ -23,6 +23,7 @@ THE SOFTWARE.
 ****************************************************************************/
 
 #include "cocostudio/CCComController.h"
+#include "2d/CCNode.h"
 
 namespace cocostudio {
 
@@ -43,6 +44,10 @@ bool ComController::init()
 
 void ComController::onEnter()
 {
+    if (_owner != nullptr)
+    {
+        _owner->scheduleUpdate();
+    }
 }
 
 void ComController::onExit()
